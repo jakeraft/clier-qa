@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — 2026-04-15 20:09 KST</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
+  .mode-tab.agent { background:#6f42c1; }
+  .mode-tab.user { background:#0d6efd; }
+  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
+  .mode-body.agent { border-color:#6f42c1; }
+  .mode-body.user { border-color:#0d6efd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
+  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
+  .section-head .chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">2026-04-15 20:09 KST &middot; Darwin 24.5.0 &middot; clier dev</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">56</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">42</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">6</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">8</div><div class="l">Skip</div></div>
+  </div>
+
+  <!-- ==================== AGENT MODE ==================== -->
+  <div class="mode-tab agent">Agent Mode</div>
+  <div class="mode-body agent">
+
+    <!-- Discovery -->
+    <div class="section">
+      <div class="section-head">
+        <span>Discovery</span>
+        <div class="chips"><span class="chip p">4</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">CLI binary on PATH</span>
+        <span class="test-cmd">which clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">No-args prints help and exits 0</span>
+        <span class="test-cmd">clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">--help shows only agent commands (run)</span>
+        <span class="test-cmd">clier --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Agent mode hides user-only commands</span>
+        <span class="test-cmd">clier --help</span>
+      </div>
+    </div>
+
+    <!-- run note -->
+    <div class="section">
+      <div class="section-head">
+        <span>run note</span>
+        <div class="chips"><span class="chip p">2</span><span class="chip f">1</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Post a note with arg content</span>
+        <span class="test-cmd">clier run note "test"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Returns valid JSON with member, run, status fields</span>
+        <span class="test-cmd">clier run note "test"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">Empty content: explains what to do</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="fail-note">Exit 1, message says "no content provided (pass as argument or pipe via stdin)" — good guidance but this is actually a PASS for error quality. Marking as overall pass.</div>
+    </div>
+
+    <!-- run tell -->
+    <div class="section">
+      <div class="section-head">
+        <span>run tell</span>
+        <div class="chips"><span class="chip p">3</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Send to nonexistent member: exit 1 with clear error</span>
+        <span class="test-cmd">clier run tell --to nobody "test"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Self-message delivers successfully</span>
+        <span class="test-cmd">clier run tell --to clier-qa "hello"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Missing --to flag: exit 1 with required flag error</span>
+        <span class="test-cmd">clier run tell</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ==================== USER MODE ==================== -->
+  <div class="mode-tab user">User Mode</div>
+  <div class="mode-body user">
+
+    <!-- Core Info Commands -->
+    <div class="section">
+      <div class="section-head">
+        <span>Core Info Commands</span>
+        <div class="chips"><span class="chip p">6</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">--version prints version string</span>
+        <span class="test-cmd">clier --version</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">No-args shows full help with all command groups</span>
+        <span class="test-cmd">clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">tutorial prints walkthrough text</span>
+        <span class="test-cmd">clier tutorial</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">auth status shows logged-in user</span>
+        <span class="test-cmd">clier auth status</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">auth token prints a valid token</span>
+        <span class="test-cmd">clier auth token</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">config view returns JSON with server_url, dashboard_url, credentials_path</span>
+        <span class="test-cmd">clier config view</span>
+      </div>
+    </div>
+
+    <!-- list -->
+    <div class="section">
+      <div class="section-head">
+        <span>list</span>
+        <div class="chips"><span class="chip p">7</span><span class="chip f">1</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --kind team returns valid JSON with items array</span>
+        <span class="test-cmd">clier list --kind team</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --kind member returns members</span>
+        <span class="test-cmd">clier list --kind member</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --kind skill returns skills</span>
+        <span class="test-cmd">clier list --kind skill</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --mine returns user resources</span>
+        <span class="test-cmd">clier list --mine</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --query "qa" returns matching resources</span>
+        <span class="test-cmd">clier list -q "qa"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --uses filters by reference</span>
+        <span class="test-cmd">clier list --uses @clier/clier-qa</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --sort star_count --order desc works</span>
+        <span class="test-cmd">clier list --sort star_count --order desc</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">list --kind invalid: should error but returns exit 0</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Passing an invalid kind like "invalid" silently returns empty results (exit 0). Should exit non-zero or warn that the kind is unrecognized.</div>
+    </div>
+
+    <!-- get -->
+    <div class="section">
+      <div class="section-head">
+        <span>get</span>
+        <div class="chips"><span class="chip p">4</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get @clier/clier-qa returns member JSON with refs</span>
+        <span class="test-cmd">clier get @clier/clier-qa</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get @clier/qa-team returns team JSON</span>
+        <span class="test-cmd">clier get @clier/qa-team</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get missing arg: exit 1 with arg count error</span>
+        <span class="test-cmd">clier get</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get bad format: exit 1 with "want owner/name" hint</span>
+        <span class="test-cmd">clier get badformat</span>
+      </div>
+    </div>
+
+    <!-- versions -->
+    <div class="section">
+      <div class="section-head">
+        <span>versions</span>
+        <div class="chips"><span class="chip p">2</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">versions returns version history JSON array</span>
+        <span class="test-cmd">clier versions @clier/clier-qa</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">versions missing arg: exit 1</span>
+        <span class="test-cmd">clier versions</span>
+      </div>
+    </div>
+
+    <!-- Workspace (status, pull, push) -->
+    <div class="section">
+      <div class="section-head">
+        <span>Workspace (status, pull, push)</span>
+        <div class="chips"><span class="chip p">5</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">status in clone returns JSON with working_copy, tracked, runs</span>
+        <span class="test-cmd">clier status</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">pull succeeds on clean clone</span>
+        <span class="test-cmd">clier pull</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">status outside clone: exit 1 "no local clone found"</span>
+        <span class="test-cmd">cd /tmp &amp;&amp; clier status</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">push outside clone: exit 1 "no local clone found"</span>
+        <span class="test-cmd">cd /tmp &amp;&amp; clier push</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">pull outside clone: exit 1 "no local clone found"</span>
+        <span class="test-cmd">cd /tmp &amp;&amp; clier pull</span>
+      </div>
+    </div>
+
+    <!-- run -->
+    <div class="section">
+      <div class="section-head">
+        <span>run</span>
+        <div class="chips"><span class="chip p">5</span><span class="chip f">1</span><span class="chip s">2</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run list returns JSON array of active runs</span>
+        <span class="test-cmd">clier run list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run view shows run details, notes, and member info</span>
+        <span class="test-cmd">clier run view &lt;id&gt;</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run stop missing arg: exit 1</span>
+        <span class="test-cmd">clier run stop</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run stop nonexistent: exit 1 "not found in current local clone"</span>
+        <span class="test-cmd">clier run stop fake-id</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run view nonexistent: exit 1 "not found in current local clone"</span>
+        <span class="test-cmd">clier run view fake-id</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">run note hidden in user mode but error is not helpful</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">"unknown command 'note' for 'run'" — correct to hide agent-only commands, but the error doesn't explain that `note` is agent-only or suggest using `CLIER_AGENT=true`.</div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">run start — requires tmux</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">run attach — requires tmux</span>
+      </div>
+    </div>
+
+    <!-- org -->
+    <div class="section">
+      <div class="section-head">
+        <span>org</span>
+        <div class="chips"><span class="chip p">3</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">org list returns JSON array of orgs</span>
+        <span class="test-cmd">clier org list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">org members returns member list</span>
+        <span class="test-cmd">clier org members @clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">org members nonexistent: exit 1 with 404</span>
+        <span class="test-cmd">clier org members fake</span>
+      </div>
+    </div>
+
+    <!-- Error handling: missing args -->
+    <div class="section">
+      <div class="section-head">
+        <span>Error Handling: Missing Arguments</span>
+        <div class="chips"><span class="chip p">6</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">delete missing arg: exit 1 + usage shown</span>
+        <span class="test-cmd">clier delete</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">fork missing arg: exit 1 + usage shown</span>
+        <span class="test-cmd">clier fork</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">clone missing arg: exit 1 + usage shown</span>
+        <span class="test-cmd">clier clone</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">edit missing arg: exit 1 + usage shown</span>
+        <span class="test-cmd">clier edit</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">org create/delete/invite/remove missing args: all exit 1</span>
+        <span class="test-cmd">clier org create / delete / invite / remove</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">create member/team/skill missing flags: exit 1 lists required flags</span>
+        <span class="test-cmd">clier create member / team / skill</span>
+      </div>
+    </div>
+
+    <!-- Error handling: invalid resources -->
+    <div class="section">
+      <div class="section-head">
+        <span>Error Handling: Invalid Resources</span>
+        <div class="chips"><span class="chip p">2</span><span class="chip f">2</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">clone nonexistent: exit 1 "resource was not found"</span>
+        <span class="test-cmd">clier clone nonexistent/thing</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get bad format: exit 1 "want owner/name"</span>
+        <span class="test-cmd">clier get badformat</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">API 404 errors expose internal schema URL</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Error responses include raw JSON like {"$schema":"http://localhost:8080/schemas/ErrorResponse.json","message":"user not found: nonexistent"} — the $schema URL is an internal implementation detail that should not be shown to users.</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">Error messages printed twice (Error: prefix + raw repeat)</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Most error outputs print the message twice: once as "Error: ..." then again as a plain line. For example: "Error: api error 404: {...}\n\napi error 404: {...}". The duplicate adds noise.</div>
+    </div>
+
+    <!-- Output Consistency -->
+    <div class="section">
+      <div class="section-head">
+        <span>Output Consistency (JSON)</span>
+        <div class="chips"><span class="chip p">2</span><span class="chip f">1</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Field names are consistent across list/get/versions</span>
+        <span class="test-cmd">(manual inspection)</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Empty list results return {"items":[],"total":0}</span>
+        <span class="test-cmd">clier list --mine</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">null vs [] inconsistency for refs and agent_types</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">`refs` and `agent_types` fields are `null` in list responses but populated arrays in get responses. Consumers must null-check before iterating. Timestamps also mix UTC ("2026-04-15T11:04:04.251788Z") with local timezone ("2026-04-15T20:04:29.175133+09:00") across different commands.</div>
+    </div>
+
+    <!-- Skipped -->
+    <div class="section">
+      <div class="section-head">
+        <span>Skipped (require infrastructure or would mutate state)</span>
+        <div class="chips"><span class="chip s">6</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">auth login — would start OAuth flow</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">auth logout — would break current session</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">open dashboard — requires browser</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">create/delete/fork — would mutate server state</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">config set — would modify local config</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">edit — would mutate server state</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: 24 GOOD &middot; 6 POOR &middot; 0 MISSING</div>
+    <div class="verdict fail">FAIL &mdash; 6 issues found</div>
+  </div>
+
+</div>
+</body>
+</html>
