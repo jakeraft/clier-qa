@@ -32,22 +32,19 @@
 (async () => {
   const list = document.getElementById('list');
   try {
-    const res = await fetch('https://api.github.com/repos/jakeraft/clier-qa/contents/reports');
+    const res = await fetch('reports/index.json');
     if (!res.ok) throw new Error(res.statusText);
     const files = await res.json();
-    const htmlFiles = files
-      .filter(f => f.name.endsWith('.html'))
-      .sort((a, b) => b.name.localeCompare(a.name));
+    const sorted = files.sort((a, b) => b.localeCompare(a));
 
-    if (htmlFiles.length === 0) {
+    if (sorted.length === 0) {
       list.innerHTML = '<li class="empty">No reports yet.</li>';
       return;
     }
 
-    list.innerHTML = htmlFiles.map(f => {
-      const name = f.name.replace('.html', '');
-      const display = name.replace('T', ' ').replace(/(\d{2})(\d{2})(\d{2})$/, '$1:$2:$3');
-      return `<li><a href="reports/${f.name}"><span class="report-date">${display}</span><span class="report-file">${f.name}</span></a></li>`;
+    list.innerHTML = sorted.map(name => {
+      const display = name.replace('.html', '').replace('T', ' ').replace(/(\d{2})(\d{2})(\d{2})$/, '$1:$2:$3');
+      return `<li><a href="reports/${name}"><span class="report-date">${display}</span><span class="report-file">${name}</span></a></li>`;
     }).join('');
   } catch (e) {
     list.innerHTML = `<li class="error">Failed to load reports: ${e.message}</li>`;
