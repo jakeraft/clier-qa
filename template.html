@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — {{DATE}}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
+  .section-head .chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header: report title and metadata -->
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">{{DATE}} · {{OS}} · clier {{VERSION}}</div>
+  </header>
+
+  <!-- Summary stats -->
+  <div class="stats">
+    <div class="stat"><div class="n">{{TOTAL}}</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">{{PASS_COUNT}}</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">{{FAIL_COUNT}}</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">{{SKIP_COUNT}}</div><div class="l">Skip</div></div>
+  </div>
+
+  <!--
+    Repeat this <div class="section"> block for each test group.
+    Groups are discovered dynamically from the CLI help output
+    (e.g. Auth, Config, Resources, Workspace, Run, Error Cases).
+  -->
+  <div class="section">
+    <div class="section-head">
+      <span>{{GROUP_NAME}}</span>
+      <div class="chips">
+        <!-- Include only chips for counts > 0 -->
+        <span class="chip p">{{GROUP_PASS_COUNT}}</span>
+        <!-- <span class="chip f">{{GROUP_FAIL_COUNT}}</span> -->
+        <!-- <span class="chip s">{{GROUP_SKIP_COUNT}}</span> -->
+      </div>
+    </div>
+
+    <!-- PASS row -->
+    <div class="test-row">
+      <span class="ico pass">&#10003;</span>
+      <span class="test-name">{{TEST_DESCRIPTION}}</span>
+      <span class="test-cmd">{{COMMAND_RUN}}</span>
+    </div>
+
+    <!-- FAIL row: add guidance-tag, followed by fail-note -->
+    <div class="test-row">
+      <span class="ico fail">&#10007;</span>
+      <span class="test-name">{{TEST_DESCRIPTION}}</span>
+      <span class="guidance-tag poor">{{GUIDANCE_RATING}}</span>
+    </div>
+    <div class="fail-note">{{FAILURE_DETAIL}}</div>
+
+    <!-- SKIP row -->
+    <div class="test-row">
+      <span class="ico skip">&#9675;</span>
+      <span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span>
+    </div>
+  </div>
+  <!-- End repeating section -->
+
+  <!-- Bottom bar: error guidance summary + overall verdict -->
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: {{GOOD_COUNT}} GOOD · {{POOR_COUNT}} POOR · {{MISSING_COUNT}} MISSING</div>
+    <div class="verdict {{VERDICT_CLASS}}">{{VERDICT_TEXT}}</div>
+  </div>
+
+</div>
+</body>
+</html>
