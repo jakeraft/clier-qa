@@ -17,7 +17,13 @@
   .stat.pass .n { color:#198754; }
   .stat.fail .n { color:#dc3545; }
   .stat.skip .n { color:#adb5bd; }
-  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
+  .mode-tab.agent { background:#6f42c1; }
+  .mode-tab.user { background:#0d6efd; }
+  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
+  .mode-body.agent { border-color:#6f42c1; }
+  .mode-body.user { border-color:#0d6efd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
   .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
   .section-head .chips { display:flex; gap:4px; }
   .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
@@ -47,13 +53,13 @@
 <body>
 <div class="wrap">
 
-  <!-- Header: report title and metadata -->
+  <!-- Header -->
   <header>
     <h1>clier QA Report</h1>
     <div class="meta">{{DATE}} · {{OS}} · clier {{VERSION}}</div>
   </header>
 
-  <!-- Summary stats -->
+  <!-- Summary stats (both modes combined) -->
   <div class="stats">
     <div class="stat"><div class="n">{{TOTAL}}</div><div class="l">Tests</div></div>
     <div class="stat pass"><div class="n">{{PASS_COUNT}}</div><div class="l">Pass</div></div>
@@ -62,45 +68,71 @@
   </div>
 
   <!--
-    Repeat this <div class="section"> block for each test group.
-    Groups are discovered dynamically from the CLI help output
-    (e.g. Auth, Config, Resources, Workspace, Run, Error Cases).
+    Agent Mode: tests run with CLIER_AGENT=true (default agent environment).
+    Sections inside this block test agent-visible commands only.
   -->
-  <div class="section">
-    <div class="section-head">
-      <span>{{GROUP_NAME}}</span>
-      <div class="chips">
-        <!-- Include only chips for counts > 0 -->
-        <span class="chip p">{{GROUP_PASS_COUNT}}</span>
-        <!-- <span class="chip f">{{GROUP_FAIL_COUNT}}</span> -->
-        <!-- <span class="chip s">{{GROUP_SKIP_COUNT}}</span> -->
+  <div class="mode-tab agent">Agent Mode</div>
+  <div class="mode-body agent">
+
+    <!-- Repeat <div class="section"> per test group -->
+    <div class="section">
+      <div class="section-head">
+        <span>{{GROUP_NAME}}</span>
+        <div class="chips">
+          <span class="chip p">{{GROUP_PASS_COUNT}}</span>
+          <!-- <span class="chip f">{{GROUP_FAIL_COUNT}}</span> -->
+        </div>
+      </div>
+
+      <!-- PASS row -->
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">{{TEST_DESCRIPTION}}</span>
+        <span class="test-cmd">{{COMMAND_RUN}}</span>
+      </div>
+
+      <!-- FAIL row -->
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">{{TEST_DESCRIPTION}}</span>
+        <span class="guidance-tag poor">{{GUIDANCE_RATING}}</span>
+      </div>
+      <div class="fail-note">{{FAILURE_DETAIL}}</div>
+
+      <!-- SKIP row -->
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span>
       </div>
     </div>
 
-    <!-- PASS row -->
-    <div class="test-row">
-      <span class="ico pass">&#10003;</span>
-      <span class="test-name">{{TEST_DESCRIPTION}}</span>
-      <span class="test-cmd">{{COMMAND_RUN}}</span>
-    </div>
-
-    <!-- FAIL row: add guidance-tag, followed by fail-note -->
-    <div class="test-row">
-      <span class="ico fail">&#10007;</span>
-      <span class="test-name">{{TEST_DESCRIPTION}}</span>
-      <span class="guidance-tag poor">{{GUIDANCE_RATING}}</span>
-    </div>
-    <div class="fail-note">{{FAILURE_DETAIL}}</div>
-
-    <!-- SKIP row -->
-    <div class="test-row">
-      <span class="ico skip">&#9675;</span>
-      <span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span>
-    </div>
   </div>
-  <!-- End repeating section -->
 
-  <!-- Bottom bar: error guidance summary + overall verdict -->
+  <!--
+    User Mode: tests run after `unset CLIER_AGENT`.
+    Sections inside this block test the full CLI surface.
+  -->
+  <div class="mode-tab user">User Mode</div>
+  <div class="mode-body user">
+
+    <!-- Same section/row structure as Agent Mode -->
+    <div class="section">
+      <div class="section-head">
+        <span>{{GROUP_NAME}}</span>
+        <div class="chips">
+          <span class="chip p">{{GROUP_PASS_COUNT}}</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">{{TEST_DESCRIPTION}}</span>
+        <span class="test-cmd">{{COMMAND_RUN}}</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom bar -->
   <div class="bottom">
     <div class="guidance-summary">Error guidance: {{GOOD_COUNT}} GOOD · {{POOR_COUNT}} POOR · {{MISSING_COUNT}} MISSING</div>
     <div class="verdict {{VERDICT_CLASS}}">{{VERDICT_TEXT}}</div>
