@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — 2026-04-17 00:05 KST</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
+  .mode-tab.agent { background:#6f42c1; }
+  .mode-tab.user { background:#0d6efd; }
+  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
+  .mode-body.agent { border-color:#6f42c1; }
+  .mode-body.user { border-color:#0d6efd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
+  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
+  .section-head .chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+  .detail-section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; padding:16px; font-size:13px; }
+  .detail-section h3 { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .detail-section p { margin-bottom:8px; }
+  .detail-section ul { margin:0 0 8px 20px; }
+  .detail-section li { margin-bottom:4px; }
+  .detail-section table { width:100%; border-collapse:collapse; margin-bottom:8px; font-size:12px; }
+  .detail-section th, .detail-section td { border:1px solid #dee2e6; padding:4px 8px; text-align:left; }
+  .detail-section th { background:#f8f9fa; }
+  .result-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; }
+  .result-badge.pass { background:#d1e7dd; color:#0f5132; }
+  .result-badge.fail { background:#f8d7da; color:#842029; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">2026-04-17 00:05 KST &middot; Darwin 24.5.0 &middot; clier dev</div>
+  </header>
+
+  <!-- Summary stats -->
+  <div class="stats">
+    <div class="stat"><div class="n">44</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">40</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">3</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">1</div><div class="l">Skip</div></div>
+  </div>
+
+  <!-- Run Metadata -->
+  <div class="section" style="margin:0 0 16px;">
+    <div class="section-head"><span>Run Metadata</span></div>
+    <div style="padding:12px 16px; font-size:13px;">
+      <p><strong>Disposable prefix:</strong> <code>qa-20260417000100</code></p>
+      <p><strong>Auth target:</strong> <code>@clier</code> (org, user: jakeraft)</p>
+      <p><strong>Resources created:</strong></p>
+      <ul style="margin:4px 0 8px 20px;">
+        <li><code>@clier/qa-20260417000100-instruction</code> (instruction)</li>
+        <li><code>@clier/qa-20260417000100-skill</code> (skill)</li>
+        <li><code>@clier/qa-20260417000100-settings</code> (claude-settings)</li>
+        <li><code>@clier/qa-20260417000100-worker</code> (team, leaf)</li>
+        <li><code>@clier/qa-20260417000100-parent</code> (team, leaf &mdash; intended as composite but child ref failed)</li>
+      </ul>
+      <p><strong>Resource graph:</strong> instruction + skill + settings &#8594; worker team (refs not attached due to @ parsing bug) &#8594; parent team (child ref not attached due to same bug)</p>
+    </div>
+  </div>
+
+  <!-- Exploratory Summary -->
+  <div class="section" style="margin:0 0 16px;">
+    <div class="section-head"><span>Exploratory Summary</span></div>
+    <div style="padding:12px 16px; font-size:13px;">
+      <p>The CLI presents a clean git-like UX with discoverable verbs. <code>clier</code> with no args shows a well-organized help with grouped commands (Resources, Runtime, Workspace, Settings). The <code>tutorial</code> command provides a coherent walkthrough. Agent mode correctly restricts surface to <code>run note</code> and <code>run tell</code> only.</p>
+      <p style="margin-top:8px;"><strong>Key findings:</strong></p>
+      <ul style="margin:4px 0 0 20px;">
+        <li><strong>Bug:</strong> Resource ref parsing fails for org-owned resources. The <code>@owner/name@version</code> format is ambiguous because <code>@</code> is used for both org prefixes and version pinning. All <code>--instruction</code>, <code>--skill</code>, <code>--claude-settings</code>, and <code>--child</code> flags fail with <code>"invalid resource ref"</code> when the owner starts with <code>@</code>.</li>
+        <li><strong>UX:</strong> <code>--version</code> outputs <code>"clier version dev"</code> &mdash; no semantic version.</li>
+        <li><strong>UX:</strong> <code>visibility: 0</code> and <code>owner_type: 1</code> are raw enum integers in JSON output, not human-readable.</li>
+        <li><strong>UX:</strong> <code>config view</code> outputs raw JSON with <code>credentials_path</code> exposed. Not harmful, but surprising for a user-facing command.</li>
+        <li><strong>UX:</strong> <code>tutorial</code> output appends <code>--help</code> usage block at the end, which is redundant for tutorial content.</li>
+        <li><strong>Minor:</strong> <code>create instruction --content "# Role\n\n..."</code> stores literal <code>\n</code> instead of newlines. Shell escaping issue, but the CLI could interpret escape sequences.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Agent Mode -->
+  <div class="mode-tab agent">Agent Mode</div>
+  <div class="mode-body agent">
+
+    <div class="section">
+      <div class="section-head">
+        <span>Agent Mode Discovery</span>
+        <div class="chips"><span class="chip p">5</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">CLI binary found on PATH</span>
+        <span class="test-cmd">which clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Agent mode shows restricted command set (run note, run tell only)</span>
+        <span class="test-cmd">clier --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run note --help shows correct usage</span>
+        <span class="test-cmd">clier run note --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run tell --help shows correct usage with examples</span>
+        <span class="test-cmd">clier run tell --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run note posts successfully and returns JSON</span>
+        <span class="test-cmd">clier run note &lt;&lt;'EOF'</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- User Mode -->
+  <div class="mode-tab user">User Mode</div>
+  <div class="mode-body user">
+
+    <!-- Discovery -->
+    <div class="section">
+      <div class="section-head">
+        <span>User Mode Discovery</span>
+        <div class="chips"><span class="chip p">8</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Full CLI help shows all command groups</span>
+        <span class="test-cmd">clier --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Version output</span>
+        <span class="test-cmd">clier --version</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Auth status shows logged-in user</span>
+        <span class="test-cmd">clier auth status</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Config view returns valid JSON</span>
+        <span class="test-cmd">clier config view</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Org list returns @clier org</span>
+        <span class="test-cmd">clier org list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Org members lists jakeraft</span>
+        <span class="test-cmd">clier org members @clier</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">List all resources returns valid JSON with 12 items</span>
+        <span class="test-cmd">clier list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">List --kind filters work (team, skill, instruction)</span>
+        <span class="test-cmd">clier list --kind team</span>
+      </div>
+    </div>
+
+    <!-- Resource Lifecycle -->
+    <div class="section">
+      <div class="section-head">
+        <span>Resource Lifecycle (CRUD)</span>
+        <div class="chips">
+          <span class="chip p">7</span>
+          <span class="chip f">2</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Create instruction</span>
+        <span class="test-cmd">clier create instruction</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Create skill</span>
+        <span class="test-cmd">clier create skill</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Create claude-settings</span>
+        <span class="test-cmd">clier create claude-settings</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Create team (leaf, no refs)</span>
+        <span class="test-cmd">clier create team</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Get resource returns correct JSON</span>
+        <span class="test-cmd">clier get @clier/...</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Edit resource creates new version</span>
+        <span class="test-cmd">clier edit @clier/...</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Versions shows version history</span>
+        <span class="test-cmd">clier versions @clier/...</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">Create team with --instruction/--skill/--child refs for @-prefixed orgs</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Ref parsing breaks for org-owned resources. <code>@clier/name@1</code> fails with <code>"invalid resource ref"</code>. The <code>@</code> symbol in org names conflicts with the <code>@version</code> separator. Error message explains the parse failure but does not suggest a workaround. This blocks the entire resource composition workflow for org-owned resources.</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">Edit team to add refs for @-prefixed orgs</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Same <code>@</code>-parsing bug as create. <code>clier edit --instruction "@clier/name@1"</code> fails identically.</div>
+    </div>
+
+    <!-- Version and History -->
+    <div class="section">
+      <div class="section-head">
+        <span>Version and History</span>
+        <div class="chips"><span class="chip p">3</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Edit instruction creates version 2 (latest_version bumps from 1 to 2)</span>
+        <span class="test-cmd">clier edit ... --content</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Versions lists both v1 and v2 with correct content</span>
+        <span class="test-cmd">clier versions</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Edit returns version_created: true field</span>
+        <span class="test-cmd">clier edit</span>
+      </div>
+    </div>
+
+    <!-- Clone / Status / Pull / Push -->
+    <div class="section">
+      <div class="section-head">
+        <span>Clone, Status, Pull, Push</span>
+        <div class="chips"><span class="chip p">7</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Clone creates local working copy with correct structure</span>
+        <span class="test-cmd">clier clone @clier/...</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Status shows clean state after clone</span>
+        <span class="test-cmd">clier status</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Clean pull succeeds (no changes)</span>
+        <span class="test-cmd">clier pull</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Remote edit causes status to show "behind"</span>
+        <span class="test-cmd">clier status (after remote edit)</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Pull updates pinned_version to latest</span>
+        <span class="test-cmd">clier pull</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Push with no changes returns no_changes</span>
+        <span class="test-cmd">clier push</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Status shows up-to-date after pull</span>
+        <span class="test-cmd">clier status</span>
+      </div>
+    </div>
+
+    <!-- Error Handling -->
+    <div class="section">
+      <div class="section-head">
+        <span>Error Handling</span>
+        <div class="chips">
+          <span class="chip p">12</span>
+          <span class="chip f">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get nonexistent &rarr; 404 with "resource not found"</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get bad format &rarr; "want &lt;owner/name&gt;"</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">delete nonexistent &rarr; 404</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">create with no args &rarr; shows subcommands</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">create team no flags &rarr; "required flag(s) name not set"</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">create duplicate &rarr; 409 "resource name already exists"</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">clone inside existing clone &rarr; refused with clear message</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run start with existing session &rarr; "duplicate session"</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">edit nonexistent &rarr; 404</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list invalid kind &rarr; lists valid kinds</span>
+        <span class="guidance-tag good">GOOD</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run view/stop nonexistent &rarr; "run plan not found"</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">fork no args &rarr; "accepts 1 arg(s), received 0"</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">org members nonexistent &rarr; "user not found" (should say "org")</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Error says "user not found: @nonexistent-org" when querying org members. Should say "organization not found" since the command operates on orgs, not users.</div>
+    </div>
+
+    <!-- Tutorial -->
+    <div class="section">
+      <div class="section-head">
+        <span>Built-in Tutorial</span>
+        <div class="chips"><span class="chip p">1</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Tutorial output is coherent, references real resources, and steps are executable</span>
+        <span class="test-cmd">clier tutorial</span>
+      </div>
+    </div>
+
+    <!-- Hello-Claude Team -->
+    <div class="section">
+      <div class="section-head">
+        <span>Hello-Claude Team Run</span>
+        <div class="chips"><span class="chip p">4</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Clone @clier/hello-claude succeeds</span>
+        <span class="test-cmd">clier clone @clier/hello-claude</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Run start launches both agents (claude + codex) in tmux</span>
+        <span class="test-cmd">clier run start</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Both members participated: hello-claude sent greeting, hello-codex replied</span>
+        <span class="test-cmd">clier run tell / clier run view</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Run stop cleanly terminates the session</span>
+        <span class="test-cmd">clier run stop</span>
+      </div>
+    </div>
+
+    <!-- Runtime Details -->
+    <div class="detail-section" style="margin:0 12px 12px;">
+      <h3>Hello-Claude Team Details</h3>
+      <p>Run ID: <code>20260416T150402-e200de4a</code>. Both agents started and communicated successfully.</p>
+      <p><strong>Message exchange:</strong></p>
+      <ul>
+        <li><strong>hello-claude &rarr; hello-codex:</strong> "Hey hello-codex! This is hello-claude. Just wanted to say hello..."</li>
+        <li><strong>hello-claude &rarr; hello-codex:</strong> "Just checking &mdash; did you get my greeting? Please reply back with a hello!"</li>
+        <li><strong>hello-codex &rarr; hello-claude:</strong> "Hello, hello-claude. I got your greeting and I'm replying back from @clier/hello-codex."</li>
+      </ul>
+      <p><strong>Notes recorded:</strong> 5 notes from both agents documenting the full greeting lifecycle.</p>
+      <p><strong>Verdict:</strong> Both members participated. The greeting exchange completed. The reported result is sensible. <code>run view</code> accurately reflects the messages and notes.</p>
+    </div>
+
+    <!-- Sync Summary -->
+    <div class="detail-section" style="margin:0 12px 12px;">
+      <h3>Sync Paths Exercised</h3>
+      <ul>
+        <li><strong>Clean pull:</strong> PASS &mdash; pull on clean clone succeeds</li>
+        <li><strong>Remote change detection:</strong> PASS &mdash; status shows "behind" after remote edit, with pinned_version &lt; latest_version</li>
+        <li><strong>Pull update:</strong> PASS &mdash; pull advances pinned_version to latest</li>
+        <li><strong>Push with no changes:</strong> PASS &mdash; returns <code>{"status":"no_changes"}</code></li>
+        <li><strong>Dirty pull rejection:</strong> Not fully exercised &mdash; editing materialized CLAUDE.md does not mark tracked state as dirty; only the .team spec file is tracked, which is not directly editable as a local file for teams without content</li>
+      </ul>
+    </div>
+
+    <!-- Version Summary -->
+    <div class="detail-section" style="margin:0 12px 12px;">
+      <h3>Version Transitions</h3>
+      <table>
+        <tr><th>Resource</th><th>Before</th><th>After</th><th>Action</th></tr>
+        <tr><td>@clier/qa-...-instruction</td><td>v1</td><td>v2</td><td>edit --content</td></tr>
+        <tr><td>@clier/qa-...-parent</td><td>v1</td><td>v2</td><td>edit --summary</td></tr>
+        <tr><td>@clier/qa-...-skill</td><td>v1</td><td>v1</td><td>no edit</td></tr>
+        <tr><td>@clier/qa-...-settings</td><td>v1</td><td>v1</td><td>no edit</td></tr>
+        <tr><td>@clier/qa-...-worker</td><td>v1</td><td>v1</td><td>no edit</td></tr>
+      </table>
+    </div>
+
+    <!-- Cleanup -->
+    <div class="section">
+      <div class="section-head">
+        <span>Cleanup</span>
+        <div class="chips"><span class="chip p">1</span></div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">All 5 disposable resources deleted, local clones removed</span>
+        <span class="test-cmd">clier delete @clier/qa-...</span>
+      </div>
+    </div>
+
+    <!-- Output Consistency -->
+    <div class="section">
+      <div class="section-head">
+        <span>Output Consistency</span>
+        <div class="chips">
+          <span class="chip p">1</span>
+          <span class="chip s">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">JSON output is valid and parseable across all commands; timestamps use ISO 8601; field names consistent</span>
+        <span class="test-cmd">various</span>
+      </div>
+      <div class="test-row">
+        <span class="ico skip">&#9675;</span>
+        <span class="test-name">run attach &mdash; not supported inside agent environment</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: 6 GOOD &middot; 6 POOR &middot; 0 MISSING</div>
+    <div class="verdict fail">FAIL &mdash; 3 issues found</div>
+  </div>
+
+</div>
+</body>
+</html>
