@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — 2026-04-17 15:16 KST</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
+  .mode-tab.agent { background:#6f42c1; }
+  .mode-tab.user { background:#0d6efd; }
+  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
+  .mode-body.agent { border-color:#6f42c1; }
+  .mode-body.user { border-color:#0d6efd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
+  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
+  .section-head .chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .detail-section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 0 16px; padding:16px; font-size:13px; }
+  .detail-section h3 { font-size:13px; font-weight:600; margin-bottom:8px; }
+  .detail-section p { margin-bottom:8px; }
+  .detail-section ul { margin:0 0 8px 20px; }
+  .detail-section li { margin-bottom:4px; }
+  .detail-section table { width:100%; border-collapse:collapse; margin-bottom:8px; font-size:12px; }
+  .detail-section th, .detail-section td { border:1px solid #dee2e6; padding:4px 8px; text-align:left; }
+  .detail-section th { background:#f8f9fa; }
+  .result-badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:4px; font-weight:600; }
+  .result-badge.pass { background:#d1e7dd; color:#0f5132; }
+  .result-badge.fail { background:#f8d7da; color:#842029; }
+  .result-badge.skip { background:#e2e3e5; color:#41464b; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">2026-04-17 15:16 KST &middot; Darwin 24.5.0 &middot; clier dev</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">29</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">21</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">7</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">1</div><div class="l">Skip</div></div>
+  </div>
+
+  <div class="detail-section">
+    <h3>Run Metadata</h3>
+    <p><strong>Disposable prefix:</strong> <code>qa-20260417143618</code></p>
+    <p><strong>Auth target:</strong> <code>@clier</code> (logged in as <code>jakeraft</code>)</p>
+    <p><strong>Exploratory summary:</strong> agent mode correctly hid the normal user surface and only exposed <code>run</code> commands. In user mode, the CLI was broadly discoverable through help, but sync semantics around pinned refs were surprising, runtime behavior on the hello workspaces was incomplete, and a skill-only push caused unrelated team metadata churn.</p>
+    <p><strong>Resources created:</strong></p>
+    <ul>
+      <li><code>@clier/qa-20260417143618-instruction</code>, <code>@clier/qa-20260417143618-skill</code>, <code>@clier/qa-20260417143618-settings</code>, <code>@clier/qa-20260417143618-codex</code></li>
+      <li><code>@clier/qa-20260417143618-worker</code> and <code>@clier/qa-20260417143618-parent</code> as a composed team graph using instruction/settings/skill/child references</li>
+      <li><code>jakeraft/qa-20260417143618-skill</code> as a fork validation target</li>
+    </ul>
+    <p><strong>Directed scenario coverage:</strong></p>
+    <ul>
+      <li><span class="result-badge pass">PASS</span> agent-mode surface validation with <code>clier</code>, <code>clier --help</code>, <code>clier run --help</code>, <code>clier run note</code>, and <code>clier run tell</code></li>
+      <li><span class="result-badge pass">PASS</span> user-mode create/get/list/versions/edit/fork/clone/status/pull/pull --force/push coverage on disposable resources</li>
+      <li><span class="result-badge fail">FAIL</span> clean tutorial/runtime claim validation on <code>@clier/hello-claude</code>; both members participated partly, but the root report never arrived</li>
+      <li><span class="result-badge fail">FAIL</span> standalone <code>@clier/hello-codex</code> runtime responsiveness; the run accepted a tell but produced no reply during the observation window</li>
+      <li><span class="result-badge pass">PASS</span> cleanup of disposable remote resources, personal fork, and local disposable clone</li>
+    </ul>
+  </div>
+
+  <div class="detail-section">
+    <h3>Versions And Sync</h3>
+    <table>
+      <tr><th>Resource</th><th>Observed Transition</th><th>Notes</th></tr>
+      <tr><td><code>@clier/qa-20260417143618-instruction</code></td><td>v1 -&gt; v2</td><td><code>clier edit</code> updated content and <code>versions</code> showed both snapshots.</td></tr>
+      <tr><td><code>@clier/qa-20260417143618-parent</code></td><td>v1 -&gt; v2 -&gt; v3</td><td>v2 was an intentional summary edit. v3 happened during a later skill-only push and also cleared the team summary unexpectedly.</td></tr>
+      <tr><td><code>@clier/qa-20260417143618-worker</code></td><td>v1 -&gt; v2</td><td>The worker version bumped during the same skill-only push even though the worker file was not edited locally.</td></tr>
+      <tr><td><code>@clier/qa-20260417143618-skill</code></td><td>v1 -&gt; v2</td><td>Expected result of the tracked local skill edit and publish.</td></tr>
+    </table>
+    <p><strong>Sync paths exercised:</strong></p>
+    <ul>
+      <li>Fresh <code>clone</code> of the disposable parent succeeded and produced a tracked working copy.</li>
+      <li>Fresh <code>status</code> on that clone immediately showed the instruction refs as <code>remote:"behind"</code> because the team still pinned v1 while the server already had instruction v2.</li>
+      <li>Clean <code>pull</code> returned <code>status:"pulled"</code> but did not advance the pinned instruction refs, so the clone remained behind.</li>
+      <li>Dirty <code>pull</code> rejected the local change with a concrete path and suggested the next action.</li>
+      <li><code>pull --force</code> overwrote the tracked local edit and restored the clean working copy.</li>
+      <li><code>push</code> correctly rejected stale instruction state before pull, then later succeeded for a skill edit but also pushed unrelated team changes.</li>
+    </ul>
+  </div>
+
+  <div class="detail-section">
+    <h3>Tutorial, Hello Team, Cleanup</h3>
+    <p><strong>Tutorial:</strong> <span class="result-badge fail">FAIL</span> <code>clier tutorial</code> documented the current command names and the pre-approved workspace constraint was respected, but the stated healthy runtime outcome was not reproducible in the observed <code>hello-claude</code> run.</p>
+    <p><strong>Hello Team:</strong> <span class="result-badge fail">FAIL</span> <code>run view</code> on <code>20260417T053906-4d02f1f6</code> showed the initial user message, a root-to-child greeting, and a child-to-root reply, but no final root report ever arrived. Both members participated, yet the workflow did not conclude as the tutorial describes.</p>
+    <p><strong>Standalone Hello-Codex:</strong> <span class="result-badge fail">FAIL</span> <code>run view</code> on <code>20260417T054042-d15acb33</code> only showed the inbound user instruction. No reply or note appeared during repeated polling.</p>
+    <p><strong>Cleanup:</strong> <span class="result-badge pass">PASS</span> All disposable remote resources were deleted, the personal fork was deleted, and the local disposable clone under <code>/Users/jake_kakao/lubiksss/anytest/@clier/qa-20260417143618-parent</code> was removed. The pre-approved <code>hello-claude</code> and <code>hello-codex</code> workspaces were intentionally left in place.</p>
+  </div>
+
+  <div class="mode-tab agent">Agent Mode</div>
+  <div class="mode-body agent">
+    <div class="section">
+      <div class="section-head">
+        <span>Agent Surface</span>
+        <div class="chips"><span class="chip p">5</span></div>
+      </div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">CLI binary available on PATH</span><span class="test-cmd">which clier</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">No-arg entrypoint showed only agent-safe messaging guidance</span><span class="test-cmd">clier</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Top-level help exposed only <code>run</code></span><span class="test-cmd">clier --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>run --help</code> listed only <code>note</code> and <code>tell</code></span><span class="test-cmd">clier run --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Work-log note posting succeeded in the current run</span><span class="test-cmd">clier run note</span></div>
+    </div>
+  </div>
+
+  <div class="mode-tab user">User Mode</div>
+  <div class="mode-body user">
+    <div class="section">
+      <div class="section-head">
+        <span>Discovery, Auth, Settings</span>
+        <div class="chips"><span class="chip p">5</span><span class="chip s">1</span></div>
+      </div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">User-mode help exposed resource, runtime, workspace, and settings groups</span><span class="test-cmd">unset CLIER_AGENT; clier --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Top-level and nested help for create/run/auth/config/open/org were discoverable</span><span class="test-cmd">clier &lt;command&gt; --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>auth status</code> and <code>auth token</code> both returned usable data</span><span class="test-cmd">clier auth status / clier auth token</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>config view</code> returned valid JSON and tutorial output matched current commands</span><span class="test-cmd">clier config view / clier tutorial</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>list</code> and <code>org list</code> confirmed authenticated access to <code>@clier</code></span><span class="test-cmd">clier list @clier --kind team --limit 5 / clier org list</span></div>
+      <div class="test-row"><span class="ico skip">&#9675;</span><span class="test-name"><code>auth login</code> and <code>auth logout</code> mutation flow skipped to avoid disrupting an already-authenticated QA session</span></div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Resource Lifecycle</span>
+        <div class="chips"><span class="chip p">4</span><span class="chip f">2</span></div>
+      </div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Created instruction, skill, claude-settings, and codex-settings in <code>@clier</code></span><span class="test-cmd">clier create instruction|skill|claude-settings|codex-settings</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Created disposable worker and parent teams and validated them with <code>get</code> and <code>versions</code></span><span class="test-cmd">clier create team / clier get / clier versions</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Edited the instruction and parent summary and observed version increments</span><span class="test-cmd">clier edit @clier/qa-20260417143618-instruction / clier edit @clier/qa-20260417143618-parent</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Forked the disposable skill into the personal namespace and retrieved it successfully</span><span class="test-cmd">clier fork @clier/qa-20260417143618-skill / clier get jakeraft/qa-20260417143618-skill</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Documented child ref syntax worked without special quoting</span><span class="guidance-tag poor">POOR</span></div>
+      <div class="fail-note">The first parent creation attempt used <code>--child @clier/qa-20260417143618-worker@1</code> exactly as help suggests and failed with <code>api error 404: {"message":"resource not found: qa-20260417143618-worker"}</code>. Quoting the same value made the command succeed. The syntax is therefore fragile for owners that already begin with <code>@</code>.</div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Skill-only publish left unrelated team metadata unchanged</span><span class="guidance-tag missing">MISSING</span></div>
+      <div class="fail-note">After editing only <code>.claude/skills/@clier/qa-20260417143618-skill/SKILL.md</code> and running <code>clier push</code>, the server reported <code>{"status":"pushed","pushed":3}</code>. Both team resources advanced versions and both team summaries were cleared to empty strings, which is silent data loss outside the edited file.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Workspace And Sync</span>
+        <div class="chips"><span class="chip p">5</span><span class="chip f">1</span></div>
+      </div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Disposable parent clone succeeded and produced a valid state file</span><span class="test-cmd">clier clone @clier/qa-20260417143618-parent</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>status</code> showed tracked resources and active run counts</span><span class="test-cmd">clier status</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Dirty <code>pull</code> rejected local tracked edits with a concrete file path</span><span class="test-cmd">clier pull</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>pull --force</code> overwrote the local tracked edit and restored a clean clone</span><span class="test-cmd">clier pull --force</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Wrong-directory <code>status</code>, <code>pull</code>, <code>push</code>, and <code>run start</code> all failed with clear no-clone guidance</span><span class="test-cmd">cd /Users/jake_kakao/lubiksss/anytest; clier status|pull|push|run start</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Fresh clone plus clean pull converged all tracked refs to current remote versions</span><span class="guidance-tag poor">POOR</span></div>
+      <div class="fail-note">Immediately after clone, both instruction files showed <code>pinned_version:1</code>, <code>latest_version:2</code>, and <code>remote:"behind"</code>. A clean <code>clier pull</code> returned <code>status:"pulled"</code> but left the working copy behind because the team continued to pin v1. The command outcome is technically successful but confusing from a first-time user perspective.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Runtime And Tutorial</span>
+        <div class="chips"><span class="chip p">7</span><span class="chip f">4</span></div>
+      </div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Pre-approved <code>hello-claude</code> workspace status was clean before runtime testing</span><span class="test-cmd">cd /Users/jake_kakao/lubiksss/anytest/@clier/hello-claude; clier status</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Existing run list on <code>hello-claude</code> was inspectable and a stopped run could be restarted</span><span class="test-cmd">clier run list / clier run stop / clier run start</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>run tell</code> to <code>@clier/hello-claude</code> delivered successfully</span><span class="test-cmd">clier run tell --run 20260417T053906-4d02f1f6 --to @clier/hello-claude ...</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>run view</code> showed both the root-to-child and child-to-root messages in the team run</span><span class="test-cmd">clier run view 20260417T053906-4d02f1f6</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>run stop</code> stopped both the hello-claude and hello-codex runs cleanly</span><span class="test-cmd">clier run stop 20260417T053906-4d02f1f6 / clier run stop 20260417T054042-d15acb33</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Standalone <code>hello-codex</code> workspace could start a new run and accept a delivered tell</span><span class="test-cmd">cd /Users/jake_kakao/lubiksss/anytest/@clier/hello-codex; clier run start / clier run tell</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Runtime error cases such as missing <code>--to</code> and bad run IDs returned non-zero with concrete messages</span><span class="test-cmd">clier run tell 'hello without to' / clier run stop not-a-run-id</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Built-in tutorial healthy outcome was reproducible as documented</span><span class="guidance-tag poor">POOR</span></div>
+      <div class="fail-note">The tutorial text itself is current, but the observed runtime did not reach the described final exchange and report. The document therefore overstates end-to-end health for this environment.</div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name"><code>hello-claude</code> produced a final root report after receiving the child reply</span><span class="guidance-tag missing">MISSING</span></div>
+      <div class="fail-note">The run showed both members participating, yet <code>@clier/hello-claude</code> never emitted the final answer back to the user. The run remained <code>status:"running"</code> until manually stopped.</div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Standalone <code>hello-codex</code> replied to a direct instruction in its own workspace</span><span class="guidance-tag missing">MISSING</span></div>
+      <div class="fail-note">Repeated <code>run view</code> polling only showed the inbound user message. No self-introduction, no note, and no outbound message appeared during the observation window.</div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name"><code>run attach</code> reported the documented agent-environment limitation clearly</span><span class="guidance-tag poor">POOR</span></div>
+      <div class="fail-note">In this agent terminal, <code>clier run attach &lt;run-id&gt;</code> failed with <code>open terminal failed: not a terminal</code> and <code>Error: exit status 1</code>. The help text says attach is unsupported in an agent environment, but the actual runtime error does not say that or suggest using a normal terminal.</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: 6 GOOD · 4 POOR · 2 MISSING</div>
+    <div class="verdict fail">FAIL — 7 issues found</div>
+  </div>
+
+</div>
+</body>
+</html>
