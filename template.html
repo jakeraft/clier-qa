@@ -6,10 +6,13 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
-  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  .wrap { max-width:820px; margin:0 auto; padding:40px 24px; }
   header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
   header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
   header .meta { font-size:12px; color:#6c757d; }
+  header .meta + .meta { margin-top:2px; }
+  header .meta code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; background:#f1f3f5; padding:1px 5px; border-radius:3px; color:#343a40; }
+
   .stats { display:flex; gap:8px; margin-bottom:16px; }
   .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
   .stat .n { font-size:32px; font-weight:700; }
@@ -17,6 +20,28 @@
   .stat.pass .n { color:#198754; }
   .stat.fail .n { color:#dc3545; }
   .stat.skip .n { color:#adb5bd; }
+
+  /* Info panels: exploratory summary, tutorial, scenarios, hello team, cleanup */
+  .panel { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .panel-head { padding:10px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#495057; display:flex; justify-content:space-between; align-items:center; }
+  .panel-head .verdict-badge { font-size:10px; padding:2px 7px; border-radius:10px; font-weight:700; letter-spacing:0; text-transform:none; }
+  .panel-body { padding:14px 16px; font-size:13px; }
+  .panel-body + .panel-body { border-top:1px solid #f1f3f5; }
+  .panel-body p + p { margin-top:8px; }
+  .panel-body ul { list-style:disc; padding-left:18px; }
+  .panel-body li { margin:2px 0; }
+  .panel-body li code, .panel-body p code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#f1f3f5; padding:1px 5px; border-radius:3px; }
+  .panel.pass .verdict-badge { background:#d1e7dd; color:#0f5132; }
+  .panel.fail .verdict-badge { background:#f8d7da; color:#842029; }
+  .panel.skip .verdict-badge { background:#e2e3e5; color:#41464b; }
+
+  /* Version transitions table */
+  .vtable { width:100%; border-collapse:collapse; font-size:13px; }
+  .vtable th, .vtable td { padding:8px 16px; text-align:left; border-bottom:1px solid #f1f3f5; }
+  .vtable th { font-size:11px; font-weight:600; text-transform:uppercase; color:#6c757d; background:#f8f9fa; }
+  .vtable td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+
+  /* Mode-grouped test rows */
   .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
   .mode-tab.agent { background:#6f42c1; }
   .mode-tab.user { background:#0d6efd; }
@@ -37,12 +62,14 @@
   .ico.fail { color:#dc3545; }
   .ico.skip { color:#adb5bd; }
   .test-name { flex:1; }
-  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
   .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
   .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
   .guidance-tag.poor { background:#fff3cd; color:#664d03; }
   .guidance-tag.missing { background:#f8d7da; color:#842029; }
   .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+
+  /* Bottom bar */
   .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
   .bottom .guidance-summary { font-size:12px; color:#6c757d; }
   .bottom .verdict { font-size:14px; font-weight:700; }
@@ -53,13 +80,14 @@
 <body>
 <div class="wrap">
 
-  <!-- Header -->
+  <!-- ======================== Header ======================== -->
   <header>
     <h1>clier QA Report</h1>
     <div class="meta">{{DATE}} · {{OS}} · clier {{VERSION}}</div>
+    <div class="meta">Prefix: <code>{{PREFIX}}</code> · Auth target: <code>{{AUTH_TARGET}}</code></div>
   </header>
 
-  <!-- Summary stats (both modes combined) -->
+  <!-- ======================== Stats ======================== -->
   <div class="stats">
     <div class="stat"><div class="n">{{TOTAL}}</div><div class="l">Tests</div></div>
     <div class="stat pass"><div class="n">{{PASS_COUNT}}</div><div class="l">Pass</div></div>
@@ -67,9 +95,63 @@
     <div class="stat skip"><div class="n">{{SKIP_COUNT}}</div><div class="l">Skip</div></div>
   </div>
 
+  <!-- ============== Exploratory summary + created resources ============== -->
+  <div class="panel">
+    <div class="panel-head"><span>Exploratory</span></div>
+    <div class="panel-body">{{EXPLORATORY_SUMMARY}}</div>
+    <div class="panel-body">
+      <b>Resources created this run</b>
+      <ul>{{CREATED_RESOURCES}}</ul>
+    </div>
+  </div>
+
+  <!-- ============== Tutorial result ============== -->
+  <div class="panel {{TUTORIAL_RESULT_CLASS}}">
+    <div class="panel-head">
+      <span>Built-in tutorial (<code>clier tutorial</code>)</span>
+      <span class="verdict-badge">{{TUTORIAL_RESULT_TEXT}}</span>
+    </div>
+    <div class="panel-body">{{TUTORIAL_RESULT_DETAIL}}</div>
+  </div>
+
+  <!-- ============== Clier-specific scenarios (qa-checklist Phase 5) ============== -->
+  <div class="panel">
+    <div class="panel-head"><span>Clier-specific scenarios</span></div>
+    <div class="panel-body">
+      <ul>{{SCENARIO_SUMMARY_ITEMS}}</ul>
+    </div>
+  </div>
+
+  <!-- ============== hello-claude runtime ============== -->
+  <div class="panel {{HELLO_TEAM_RESULT_CLASS}}">
+    <div class="panel-head">
+      <span>hello-claude runtime</span>
+      <span class="verdict-badge">{{HELLO_TEAM_RESULT_TEXT}}</span>
+    </div>
+    <div class="panel-body">{{HELLO_TEAM_RESULT_DETAIL}}</div>
+  </div>
+
+  <!-- ============== Version transitions ============== -->
+  <div class="panel">
+    <div class="panel-head"><span>Version transitions</span></div>
+    <table class="vtable">
+      <thead><tr><th>Resource</th><th>Before</th><th>After</th><th>Trigger</th></tr></thead>
+      <tbody>{{VERSION_SUMMARY_ROWS}}</tbody>
+    </table>
+  </div>
+
+  <!-- ============== Sync paths exercised ============== -->
+  <div class="panel">
+    <div class="panel-head"><span>Sync paths exercised</span></div>
+    <div class="panel-body">
+      <ul>{{SYNC_SUMMARY_ITEMS}}</ul>
+    </div>
+  </div>
+
+  <!-- ============== Agent mode tests (qa-checklist Phase 1) ============== -->
   <!--
-    Agent Mode: tests run with CLIER_AGENT=true (default agent environment).
-    Sections inside this block test agent-visible commands only.
+    Tests run with CLIER_AGENT=true (default agent environment).
+    Agent-only commands (run note) should be visible here.
   -->
   <div class="mode-tab agent">Agent Mode</div>
   <div class="mode-body agent">
@@ -81,6 +163,7 @@
         <div class="chips">
           <span class="chip p">{{GROUP_PASS_COUNT}}</span>
           <!-- <span class="chip f">{{GROUP_FAIL_COUNT}}</span> -->
+          <!-- <span class="chip s">{{GROUP_SKIP_COUNT}}</span> -->
         </div>
       </div>
 
@@ -91,7 +174,7 @@
         <span class="test-cmd">{{COMMAND_RUN}}</span>
       </div>
 
-      <!-- FAIL row -->
+      <!-- FAIL row: include guidance-tag + fail-note below -->
       <div class="test-row">
         <span class="ico fail">&#10007;</span>
         <span class="test-name">{{TEST_DESCRIPTION}}</span>
@@ -99,7 +182,7 @@
       </div>
       <div class="fail-note">{{FAILURE_DETAIL}}</div>
 
-      <!-- SKIP row -->
+      <!-- SKIP row: SKIP_REASON should name the environmental limit (e.g., tmux nesting, no GUI) -->
       <div class="test-row">
         <span class="ico skip">&#9675;</span>
         <span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span>
@@ -108,14 +191,16 @@
 
   </div>
 
+  <!-- ============== User mode tests (qa-checklist Phase 2) ============== -->
   <!--
-    User Mode: tests run after `unset CLIER_AGENT`.
-    Sections inside this block test the full CLI surface.
+    Tests run per-invocation with `env -u CLIER_AGENT clier ...` or
+    `CLIER_AGENT= clier ...` — the agent cannot leave agent mode
+    permanently, so every user-mode check prefixes the command.
+    Agent-only commands (run note) should be hidden here.
   -->
   <div class="mode-tab user">User Mode</div>
   <div class="mode-body user">
 
-    <!-- Same section/row structure as Agent Mode -->
     <div class="section">
       <div class="section-head">
         <span>{{GROUP_NAME}}</span>
@@ -132,7 +217,16 @@
 
   </div>
 
-  <!-- Bottom bar -->
+  <!-- ============== Cleanup ============== -->
+  <div class="panel {{CLEANUP_STATUS_CLASS}}">
+    <div class="panel-head">
+      <span>Cleanup</span>
+      <span class="verdict-badge">{{CLEANUP_STATUS_TEXT}}</span>
+    </div>
+    <div class="panel-body">{{CLEANUP_DETAIL}}</div>
+  </div>
+
+  <!-- ============== Bottom verdict ============== -->
   <div class="bottom">
     <div class="guidance-summary">Error guidance: {{GOOD_COUNT}} GOOD · {{POOR_COUNT}} POOR · {{MISSING_COUNT}} MISSING</div>
     <div class="verdict {{VERDICT_CLASS}}">{{VERDICT_TEXT}}</div>
