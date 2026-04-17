@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — 2026-04-18</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:800px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .summary-grid { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; margin-bottom:16px; }
+  .card { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; }
+  .card h2 { font-size:13px; font-weight:700; margin-bottom:10px; }
+  .meta-list, .simple-list { margin-left:18px; color:#495057; }
+  .meta-list li, .simple-list li { margin:4px 0; }
+  .kv { font-size:12px; color:#6c757d; margin-bottom:8px; }
+  .result-box { border-radius:6px; padding:10px 12px; font-size:12px; font-weight:600; margin-bottom:8px; }
+  .result-box.pass { color:#0f5132; background:#d1e7dd; }
+  .result-box.fail { color:#842029; background:#f8d7da; }
+  .result-box.skip { color:#41464b; background:#e2e3e5; }
+  .cleanup.pass { color:#0f5132; background:#d1e7dd; }
+  .cleanup.fail { color:#842029; background:#f8d7da; }
+  .cleanup { border-radius:6px; padding:10px 12px; font-size:12px; font-weight:600; margin-bottom:8px; }
+  .cleanup-detail { font-size:12px; color:#6c757d; }
+  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
+  .mode-tab.agent { background:#6f42c1; }
+  .mode-tab.user { background:#0d6efd; }
+  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
+  .mode-body.agent { border-color:#6f42c1; }
+  .mode-body.user { border-color:#0d6efd; }
+  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
+  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
+  .section-head .chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family:monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">2026-04-18 · darwin 24.5.0 · clier dev</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">32</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">22</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">9</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">1</div><div class="l">Skip</div></div>
+  </div>
+
+  <div class="summary-grid">
+    <div class="card">
+      <h2>Run Metadata</h2>
+      <div class="kv">Binary: <strong>mise go/1.25.8/bin/clier</strong></div>
+      <div class="kv">Auth: <strong>jakeraft</strong> @ localhost:8080</div>
+      <div class="kv">Disposable prefix: <strong>qa-1776442*</strong> (none persisted — all create/fork blocked)</div>
+      <div class="kv">Exploratory summary</div>
+      <div class="cleanup-detail">Agent-mode only exposes <code>run</code>; user-mode reveals the full tree. Help is self-descriptive and the tutorial/flag discovery path works. Read-path (list/get/versions/status/pull) is solid; <strong>every write path (create/fork/edit/push-with-changes) returns api error 500 "internal error"</strong>, blocking the primary publishing flow.</div>
+    </div>
+
+    <div class="card">
+      <h2>Directed Scenarios</h2>
+      <ul class="simple-list">
+        <li>agent vs user mode command separation — <strong>PASS</strong></li>
+        <li>version/help surface — <strong>partial</strong> (no --version in agent mode)</li>
+        <li>clone + pull + push + remove round-trip — <strong>partial</strong> (push blocked by 500)</li>
+        <li>list filter validation — <strong>partial</strong> (kind validated; limit/sort/order silently ignored)</li>
+        <li>error quality rating across failure paths — <strong>run</strong></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Created Resources</h2>
+      <ul class="meta-list">
+        <li>None — all <code>clier create</code> / <code>clier fork</code> attempts returned api 500. No server-side leftovers.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Sync Paths</h2>
+      <ul class="simple-list">
+        <li>clone @clier/hello-codex — PASS</li>
+        <li>pull (clean) — PASS</li>
+        <li>pull (dirty) — refused with GOOD guidance</li>
+        <li>pull --force (dirty) — restores cleanly</li>
+        <li>push (no changes) — PASS (no_changes)</li>
+        <li>push (modified) — <strong>FAIL</strong> (api 500)</li>
+        <li>remove — PASS, no leftover</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2>Built-in Tutorial</h2>
+      <div class="result-box skip">NOT RUN — out of scope for this request</div>
+      <div class="cleanup-detail">User asked for focused black-box QA on auth/list/clone/run/create/fork/push/pull and error cases. Tutorial walkthrough (Phase 4 of qa-checklist) skipped.</div>
+    </div>
+
+    <div class="card">
+      <h2>Hello-Claude Team Run</h2>
+      <div class="result-box skip">NOT RUN</div>
+      <div class="cleanup-detail">No <code>run start</code> issued; an unrelated pre-existing run (20260417T102823-e47340a6) was visible in <code>run list</code> but not exercised.</div>
+    </div>
+
+    <div class="card">
+      <h2>Version Transitions</h2>
+      <div class="cleanup-detail">No version bump observed — edit/push flows blocked by server 500 before a v2 could be produced.</div>
+    </div>
+
+    <div class="card">
+      <h2>Cleanup</h2>
+      <div class="cleanup pass">CLEAN</div>
+      <div class="cleanup-detail"><code>clier clone @clier/hello-codex</code> → <code>clier remove</code>; workspace restored to original (<code>@clier/clier-qa-claude</code>, <code>@clier/hello-claude</code>). No server-side artifacts because writes were blocked.</div>
+    </div>
+  </div>
+
+  <div class="mode-tab agent">Agent Mode</div>
+  <div class="mode-body agent">
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 1 — Agent-mode surface</span>
+        <div class="chips">
+          <span class="chip p">3</span>
+          <span class="chip f">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Top-level help lists only <code>run</code></span>
+        <span class="test-cmd">clier --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name"><code>run</code> exposes only note/tell; start/list/view/attach/stop hidden</span>
+        <span class="test-cmd">clier run --help</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">User-only commands refuse with "unknown command"</span>
+        <span class="test-cmd">clier list / clone / auth</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">--version not supported in agent mode</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note"><code>clier --version</code> → <code>Error: unknown flag: --version</code>. Same binary accepts <code>-v/--version</code> only in user mode. Agents cannot record the binary version they executed against.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 2 — run note / run tell</span>
+        <div class="chips">
+          <span class="chip p">3</span>
+          <span class="chip f">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run note via heredoc returns posted JSON</span>
+        <span class="test-cmd">clier run note &lt;&lt;EOF … EOF</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run tell defaults --run from CLIER_RUN_ID</span>
+        <span class="test-cmd">clier run tell --to @clier/clier-qa-claude "test"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Hidden-command refusal uses clean "unknown command" error</span>
+        <span class="test-cmd">clier list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name"><code>run note --help</code> lacks Usage: section</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Every other subcommand renders a <code>Usage:</code> block; <code>run note</code> jumps straight from description to <code>Flags:</code>. Minor inconsistency but surprising for agents scraping help.</div>
+    </div>
+
+  </div>
+
+  <div class="mode-tab user">User Mode</div>
+  <div class="mode-body user">
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 3 — auth / read APIs</span>
+        <div class="chips">
+          <span class="chip p">6</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">auth status shows logged-in user</span>
+        <span class="test-cmd">clier auth status → "Logged in as jakeraft"</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">auth token prints access token (documented behavior)</span>
+        <span class="test-cmd">clier auth token</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list returns 13 items with consistent schema</span>
+        <span class="test-cmd">clier list</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --kind team --limit 3 honors both filters</span>
+        <span class="test-cmd">clier list --kind team --limit 3</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get/versions/status return coherent metadata</span>
+        <span class="test-cmd">clier get @clier/hello-claude</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">org list enumerates writable orgs</span>
+        <span class="test-cmd">clier org list → [@clier]</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 4 — clone / pull / push / remove</span>
+        <div class="chips">
+          <span class="chip p">5</span>
+          <span class="chip f">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">clone fresh resource succeeds, state.json written</span>
+        <span class="test-cmd">clier clone @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">status reports tracked files and "local":"clean"</span>
+        <span class="test-cmd">clier status @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">pull on clean workspace → status "pulled"</span>
+        <span class="test-cmd">clier pull @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">push without changes → no_changes</span>
+        <span class="test-cmd">clier push @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">pull --force restores modified file</span>
+        <span class="test-cmd">clier pull --force @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">push of modified resource → api 500 INTERNAL</span>
+        <span class="guidance-tag missing">MISSING</span>
+      </div>
+      <div class="fail-note">After editing <code>AGENTS.md</code>, <code>clier push @clier/hello-codex</code> → <code>Error: api error 500: {"error":{"code":500,"reason":"INTERNAL","message":"internal error"}}</code>. No detail, no remediation. User cannot publish any change.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 5 — create / fork (write APIs)</span>
+        <div class="chips">
+          <span class="chip f">3</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">create skill → api 500 INTERNAL</span>
+        <span class="guidance-tag missing">MISSING</span>
+      </div>
+      <div class="fail-note"><code>clier create skill --owner @clier --name qa-… --summary … --content "---\nname:…"</code> and the jakeraft-namespaced variant both 500. Help and arg parsing look correct; the server rejects the request opaquely.</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">create instruction → api 500 INTERNAL</span>
+        <span class="guidance-tag missing">MISSING</span>
+      </div>
+      <div class="fail-note">Same symptom as create skill.</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">fork @clier/* → api 500 INTERNAL</span>
+        <span class="guidance-tag missing">MISSING</span>
+      </div>
+      <div class="fail-note">Tried forks of team (hello-codex), skill (self-intro), instruction (greeting-prompt); all 500. <code>list jakeraft</code> confirms target namespace is empty, so the failure isn't a name conflict.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 6 — Error / conflict cases</span>
+        <div class="chips">
+          <span class="chip p">6</span>
+          <span class="chip f">3</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get @clier/nonexistent → 404 with owner/name echo</span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier get @clier/nonexistent</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">get hello-claude (no slash) → "want &lt;owner/name&gt;"</span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier get hello-claude</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">pull on dirty workspace refuses with file + remedy</span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier pull @clier/hello-codex</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">status on missing workspace suggests <code>clier clone</code></span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier status @clier/no-such</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">list --kind bogus → 400 with valid value list</span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier list --kind bogus</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">run view nonexistent-id → "run … not found"</span>
+        <span class="guidance-tag good">GOOD</span>
+        <span class="test-cmd">clier run view nonexistent-id</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">clone over existing dir: no next-step hint</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note"><code>Error: clone destination already exists: /…/hello-claude</code>. States the fact, omits remediation (pull, remove). Contrast with pull's "push or revert first".</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">auth bogus / clier auth &lt;unknown&gt;: no explanatory Error line</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note">Exit code 1, but stderr is only the usage block — no <code>Error: unknown command "bogus"</code> style line. Agents scraping stderr cannot distinguish "help shown intentionally" from "invocation failed".</div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">list --limit -5 / --order bogus / --sort bogus silently ignored</span>
+        <span class="guidance-tag missing">MISSING</span>
+      </div>
+      <div class="fail-note">Server returns the full 13-item list regardless. Compare <code>--kind bogus</code> which is rejected with GOOD guidance. Inconsistent validation means malformed sort/order silently yields incorrect results.</div>
+    </div>
+
+    <div class="section">
+      <div class="section-head">
+        <span>Phase 7 — Output consistency</span>
+        <div class="chips">
+          <span class="chip p">2</span>
+          <span class="chip f">1</span>
+        </div>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Timestamps uniformly RFC 3339</span>
+      </div>
+      <div class="test-row">
+        <span class="ico pass">&#10003;</span>
+        <span class="test-name">Empty result sets render as [] (e.g. list --mine, list jakeraft)</span>
+      </div>
+      <div class="test-row">
+        <span class="ico fail">&#10007;</span>
+        <span class="test-name">Collection envelope and ref field naming inconsistent across commands</span>
+        <span class="guidance-tag poor">POOR</span>
+      </div>
+      <div class="fail-note"><code>list</code> returns <code>{items, total}</code> but <code>versions</code> and <code>org list</code> return bare arrays. <code>get</code>'s refs use <code>name/owner_name/target_version</code>; <code>versions</code> snapshot refs use <code>target_name/target_owner/target_version</code>. Also: every list/get response inlines a ~500-byte base64 SVG in <code>owner_avatar_url</code> per item and per ref, bloating responses by an order of magnitude.</div>
+    </div>
+
+  </div>
+
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: 6 GOOD · 4 POOR · 4 MISSING</div>
+    <div class="verdict fail">FAIL — write path (create/fork/push) fully blocked by server 500</div>
+  </div>
+
+</div>
+</body>
+</html>
