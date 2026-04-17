@@ -6,7 +6,8 @@
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
-  .wrap { max-width:820px; margin:0 auto; padding:40px 24px; }
+  .wrap { max-width:860px; margin:0 auto; padding:40px 24px; }
+
   header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
   header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
   header .meta { font-size:12px; color:#6c757d; }
@@ -21,40 +22,42 @@
   .stat.fail .n { color:#dc3545; }
   .stat.skip .n { color:#adb5bd; }
 
-  /* Info panels: exploratory summary, tutorial, scenarios, hello team, cleanup */
-  .panel { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin-bottom:12px; overflow:hidden; }
-  .panel-head { padding:10px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:#495057; display:flex; justify-content:space-between; align-items:center; }
-  .panel-head .verdict-badge { font-size:10px; padding:2px 7px; border-radius:10px; font-weight:700; letter-spacing:0; text-transform:none; }
-  .panel-body { padding:14px 16px; font-size:13px; }
-  .panel-body + .panel-body { border-top:1px solid #f1f3f5; }
-  .panel-body p + p { margin-top:8px; }
-  .panel-body ul { list-style:disc; padding-left:18px; }
-  .panel-body li { margin:2px 0; }
-  .panel-body li code, .panel-body p code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#f1f3f5; padding:1px 5px; border-radius:3px; }
-  .panel.pass .verdict-badge { background:#d1e7dd; color:#0f5132; }
-  .panel.fail .verdict-badge { background:#f8d7da; color:#842029; }
-  .panel.skip .verdict-badge { background:#e2e3e5; color:#41464b; }
+  /* Phase sections — the primary organizing axis. Each phase renders
+     as a card with a left stripe (agent=purple, user=blue, else gray)
+     and a head row that exposes the phase number, name, and per-phase
+     pass/fail/skip chips. */
+  .phase { background:#fff; border:1px solid #dee2e6; border-left:4px solid #adb5bd; border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .phase.agent { border-left-color:#6f42c1; }
+  .phase.user  { border-left-color:#0d6efd; }
+  .phase.pass  { border-top:1px solid #b7dfc5; }
+  .phase.fail  { border-top:1px solid #f1aeb5; }
 
-  /* Version transitions table */
-  .vtable { width:100%; border-collapse:collapse; font-size:13px; }
-  .vtable th, .vtable td { padding:8px 16px; text-align:left; border-bottom:1px solid #f1f3f5; }
-  .vtable th { font-size:11px; font-weight:600; text-transform:uppercase; color:#6c757d; background:#f8f9fa; }
-  .vtable td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+  .phase-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; display:flex; align-items:center; gap:10px; }
+  .phase-num { font-size:11px; font-weight:700; color:#fff; background:#adb5bd; padding:3px 8px; border-radius:10px; letter-spacing:0.3px; }
+  .phase.agent .phase-num { background:#6f42c1; }
+  .phase.user  .phase-num { background:#0d6efd; }
+  .phase-title { font-size:13px; font-weight:600; flex:1; }
+  .phase-verdict { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
+  .phase-verdict.pass { background:#d1e7dd; color:#0f5132; }
+  .phase-verdict.fail { background:#f8d7da; color:#842029; }
+  .phase-verdict.skip { background:#e2e3e5; color:#41464b; }
 
-  /* Mode-grouped test rows */
-  .mode-tab { display:inline-block; font-size:12px; font-weight:700; color:#fff; text-transform:uppercase; letter-spacing:0.5px; padding:6px 14px; border-radius:6px 6px 0 0; margin-top:16px; }
-  .mode-tab.agent { background:#6f42c1; }
-  .mode-tab.user { background:#0d6efd; }
-  .mode-body { border:2px solid transparent; border-radius:0 8px 8px 8px; padding:12px 0 0; margin-bottom:8px; }
-  .mode-body.agent { border-color:#6f42c1; }
-  .mode-body.user { border-color:#0d6efd; }
-  .section { background:#fff; border:1px solid #dee2e6; border-radius:8px; margin:0 12px 12px; overflow:hidden; }
-  .section-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; font-size:13px; font-weight:600; display:flex; justify-content:space-between; }
-  .section-head .chips { display:flex; gap:4px; }
+  .phase-chips { display:flex; gap:4px; }
   .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
   .chip.p { background:#d1e7dd; color:#0f5132; }
   .chip.f { background:#f8d7da; color:#842029; }
   .chip.s { background:#e2e3e5; color:#41464b; }
+
+  .phase-body { padding:0; }
+  .phase-narrative { padding:14px 16px; font-size:13px; border-bottom:1px solid #f1f3f5; }
+  .phase-narrative:last-child { border-bottom:none; }
+  .phase-narrative p + p { margin-top:8px; }
+  .phase-narrative ul { list-style:disc; padding-left:18px; margin:6px 0; }
+  .phase-narrative li { margin:2px 0; }
+  .phase-narrative code, .test-name code, .sub-head code, .phase-title code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#f1f3f5; padding:1px 5px; border-radius:3px; }
+  .phase-narrative b.sub-head { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#495057; margin-bottom:6px; }
+
+  /* Test rows inside phases that do command-by-command verification */
   .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
   .test-row:last-child { border-bottom:none; }
   .ico { font-size:12px; width:16px; text-align:center; }
@@ -69,7 +72,12 @@
   .guidance-tag.missing { background:#f8d7da; color:#842029; }
   .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
 
-  /* Bottom bar */
+  /* Version transitions mini-table used inside Phase 4 narrative */
+  .vtable { width:100%; border-collapse:collapse; font-size:12px; margin-top:4px; }
+  .vtable th, .vtable td { padding:6px 0; text-align:left; border-bottom:1px solid #f1f3f5; }
+  .vtable th { font-size:10px; font-weight:600; text-transform:uppercase; color:#6c757d; }
+  .vtable td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+
   .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
   .bottom .guidance-summary { font-size:12px; color:#6c757d; }
   .bottom .verdict { font-size:14px; font-weight:700; }
@@ -95,138 +103,165 @@
     <div class="stat skip"><div class="n">{{SKIP_COUNT}}</div><div class="l">Skip</div></div>
   </div>
 
-  <!-- ============== Exploratory summary + created resources ============== -->
-  <div class="panel">
-    <div class="panel-head"><span>Exploratory</span></div>
-    <div class="panel-body">{{EXPLORATORY_SUMMARY}}</div>
-    <div class="panel-body">
-      <b>Resources created this run</b>
-      <ul>{{CREATED_RESOURCES}}</ul>
+  <!-- ==================== Exploratory (Phase 0 + Phase 3 narrative) ==================== -->
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Exploratory</span>
+      <span class="phase-title">Setup + black-box discovery summary</span>
     </div>
-  </div>
-
-  <!-- ============== Tutorial result ============== -->
-  <div class="panel {{TUTORIAL_RESULT_CLASS}}">
-    <div class="panel-head">
-      <span>Built-in tutorial (<code>clier tutorial</code>)</span>
-      <span class="verdict-badge">{{TUTORIAL_RESULT_TEXT}}</span>
-    </div>
-    <div class="panel-body">{{TUTORIAL_RESULT_DETAIL}}</div>
-  </div>
-
-  <!-- ============== Clier-specific scenarios (qa-checklist Phase 5) ============== -->
-  <div class="panel">
-    <div class="panel-head"><span>Clier-specific scenarios</span></div>
-    <div class="panel-body">
-      <ul>{{SCENARIO_SUMMARY_ITEMS}}</ul>
-    </div>
-  </div>
-
-  <!-- ============== hello-claude runtime ============== -->
-  <div class="panel {{HELLO_TEAM_RESULT_CLASS}}">
-    <div class="panel-head">
-      <span>hello-claude runtime</span>
-      <span class="verdict-badge">{{HELLO_TEAM_RESULT_TEXT}}</span>
-    </div>
-    <div class="panel-body">{{HELLO_TEAM_RESULT_DETAIL}}</div>
-  </div>
-
-  <!-- ============== Version transitions ============== -->
-  <div class="panel">
-    <div class="panel-head"><span>Version transitions</span></div>
-    <table class="vtable">
-      <thead><tr><th>Resource</th><th>Before</th><th>After</th><th>Trigger</th></tr></thead>
-      <tbody>{{VERSION_SUMMARY_ROWS}}</tbody>
-    </table>
-  </div>
-
-  <!-- ============== Sync paths exercised ============== -->
-  <div class="panel">
-    <div class="panel-head"><span>Sync paths exercised</span></div>
-    <div class="panel-body">
-      <ul>{{SYNC_SUMMARY_ITEMS}}</ul>
-    </div>
-  </div>
-
-  <!-- ============== Agent mode tests (qa-checklist Phase 1) ============== -->
-  <!--
-    Tests run with CLIER_AGENT=true (default agent environment).
-    Agent-only commands (run note) should be visible here.
-  -->
-  <div class="mode-tab agent">Agent Mode</div>
-  <div class="mode-body agent">
-
-    <!-- Repeat <div class="section"> per test group -->
-    <div class="section">
-      <div class="section-head">
-        <span>{{GROUP_NAME}}</span>
-        <div class="chips">
-          <span class="chip p">{{GROUP_PASS_COUNT}}</span>
-          <!-- <span class="chip f">{{GROUP_FAIL_COUNT}}</span> -->
-          <!-- <span class="chip s">{{GROUP_SKIP_COUNT}}</span> -->
-        </div>
+    <div class="phase-body">
+      <div class="phase-narrative">{{EXPLORATORY_SUMMARY}}</div>
+      <div class="phase-narrative">
+        <b class="sub-head">Resources created this run</b>
+        <ul>{{CREATED_RESOURCES}}</ul>
       </div>
+    </div>
+  </div>
 
-      <!-- PASS row -->
-      <div class="test-row">
-        <span class="ico pass">&#10003;</span>
-        <span class="test-name">{{TEST_DESCRIPTION}}</span>
-        <span class="test-cmd">{{COMMAND_RUN}}</span>
+  <!-- ==================== Phase 1 — Agent-mode discovery ==================== -->
+  <div class="phase agent">
+    <div class="phase-head">
+      <span class="phase-num">Phase 1</span>
+      <span class="phase-title">Agent-mode surface</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P1_PASS}}</span>
+        <!-- <span class="chip f">{{P1_FAIL}}</span> -->
+        <!-- <span class="chip s">{{P1_SKIP}}</span> -->
       </div>
-
-      <!-- FAIL row: include guidance-tag + fail-note below -->
-      <div class="test-row">
-        <span class="ico fail">&#10007;</span>
-        <span class="test-name">{{TEST_DESCRIPTION}}</span>
-        <span class="guidance-tag poor">{{GUIDANCE_RATING}}</span>
-      </div>
+    </div>
+    <div class="phase-body">
+      <!-- Repeat .test-row per check. Example rows: -->
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="test-cmd">{{COMMAND_RUN}}</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="guidance-tag poor">{{GUIDANCE_RATING}}</span></div>
       <div class="fail-note">{{FAILURE_DETAIL}}</div>
-
-      <!-- SKIP row: SKIP_REASON should name the environmental limit (e.g., tmux nesting, no GUI) -->
-      <div class="test-row">
-        <span class="ico skip">&#9675;</span>
-        <span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span>
-      </div>
+      <div class="test-row"><span class="ico skip">&#9675;</span><span class="test-name">{{TEST_DESCRIPTION}} — {{SKIP_REASON}}</span></div>
     </div>
-
   </div>
 
-  <!-- ============== User mode tests (qa-checklist Phase 2) ============== -->
+  <!-- ==================== Phase 2 — User-mode discovery ==================== -->
+  <div class="phase user">
+    <div class="phase-head">
+      <span class="phase-num">Phase 2</span>
+      <span class="phase-title">User-mode surface (<code>env -u CLIER_AGENT</code>)</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P2_PASS}}</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="test-cmd">{{COMMAND_RUN}}</span></div>
+    </div>
+  </div>
+
+  <!-- ==================== Phase 3 — Black-box walk ==================== -->
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 3</span>
+      <span class="phase-title">Black-box autonomous walk</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P3_PASS}}</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="test-cmd">{{COMMAND_RUN}}</span></div>
+    </div>
+  </div>
+
+  <!-- ==================== Phase 4 — Tutorial scenario ==================== -->
   <!--
-    Tests run per-invocation with `env -u CLIER_AGENT clier ...` or
-    `CLIER_AGENT= clier ...` — the agent cannot leave agent mode
-    permanently, so every user-mode check prefixes the command.
-    Agent-only commands (run note) should be hidden here.
+    Phase 4 folds in hello-team runtime, version transitions, and sync
+    paths because those are all observations made while running the
+    built-in tutorial. Keeping them under Phase 4 prevents the
+    duplication we had when they were top-level panels.
   -->
-  <div class="mode-tab user">User Mode</div>
-  <div class="mode-body user">
-
-    <div class="section">
-      <div class="section-head">
-        <span>{{GROUP_NAME}}</span>
-        <div class="chips">
-          <span class="chip p">{{GROUP_PASS_COUNT}}</span>
-        </div>
-      </div>
-      <div class="test-row">
-        <span class="ico pass">&#10003;</span>
-        <span class="test-name">{{TEST_DESCRIPTION}}</span>
-        <span class="test-cmd">{{COMMAND_RUN}}</span>
-      </div>
+  <div class="phase {{PHASE4_CLASS}}">
+    <div class="phase-head">
+      <span class="phase-num">Phase 4</span>
+      <span class="phase-title">Tutorial (<code>clier tutorial</code>) — Phase 1 + Phase 2</span>
+      <span class="phase-verdict {{PHASE4_CLASS}}">{{PHASE4_VERDICT}}</span>
     </div>
+    <div class="phase-body">
+      <div class="phase-narrative">{{TUTORIAL_DETAIL}}</div>
 
+      <div class="phase-narrative">
+        <b class="sub-head">hello-claude runtime</b>
+        <p>{{HELLO_TEAM_DETAIL}}</p>
+      </div>
+
+      <div class="phase-narrative">
+        <b class="sub-head">Version transitions (iterate scenario)</b>
+        <table class="vtable">
+          <thead><tr><th>Resource</th><th>Before</th><th>After</th><th>Trigger</th></tr></thead>
+          <tbody>{{VERSION_SUMMARY_ROWS}}</tbody>
+        </table>
+      </div>
+
+      <div class="phase-narrative">
+        <b class="sub-head">Sync paths exercised</b>
+        <ul>{{SYNC_SUMMARY_ITEMS}}</ul>
+      </div>
+
+      <!-- Tutorial step rows (clone, start, tell, attach, stop, remove, fork, edit, push, pull). -->
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="test-cmd">{{COMMAND_RUN}}</span></div>
+    </div>
   </div>
 
-  <!-- ============== Cleanup ============== -->
-  <div class="panel {{CLEANUP_STATUS_CLASS}}">
-    <div class="panel-head">
-      <span>Cleanup</span>
-      <span class="verdict-badge">{{CLEANUP_STATUS_TEXT}}</span>
+  <!-- ==================== Phase 5 — Clier-specific guards ==================== -->
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 5</span>
+      <span class="phase-title">Clier-specific scenarios</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P5_PASS}}</span>
+        <!-- <span class="chip f">{{P5_FAIL}}</span> -->
+      </div>
     </div>
-    <div class="panel-body">{{CLEANUP_DETAIL}}</div>
+    <div class="phase-body">
+      <!-- One .test-row per guard (double-start refuse, remove rejections, hint convention, workspace-dir, cwd independence, etc.). -->
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{GUARD_NAME}} — {{GUARD_RESULT}}</span></div>
+    </div>
   </div>
 
-  <!-- ============== Bottom verdict ============== -->
+  <!-- ==================== Phase 6 — Error & conflict cases ==================== -->
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 6</span>
+      <span class="phase-title">Error &amp; conflict cases ({{GOOD_COUNT}} GOOD / {{POOR_COUNT}} POOR / {{MISSING_COUNT}} MISSING)</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P6_PASS}}</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span><span class="guidance-tag poor">{{GUIDANCE_RATING}}</span><span class="test-cmd">{{COMMAND_RUN}}</span></div>
+    </div>
+  </div>
+
+  <!-- ==================== Phase 7 — Output consistency ==================== -->
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 7</span>
+      <span class="phase-title">Output consistency</span>
+      <div class="phase-chips">
+        <span class="chip p">{{P7_PASS}}</span>
+      </div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">{{TEST_DESCRIPTION}}</span></div>
+    </div>
+  </div>
+
+  <!-- ==================== Phase 8 — Cleanup ==================== -->
+  <div class="phase {{PHASE8_CLASS}}">
+    <div class="phase-head">
+      <span class="phase-num">Phase 8</span>
+      <span class="phase-title">Cleanup</span>
+      <span class="phase-verdict {{PHASE8_CLASS}}">{{PHASE8_VERDICT}}</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-narrative">{{CLEANUP_DETAIL}}</div>
+    </div>
+  </div>
+
+  <!-- ==================== Final verdict ==================== -->
   <div class="bottom">
     <div class="guidance-summary">Error guidance: {{GOOD_COUNT}} GOOD · {{POOR_COUNT}} POOR · {{MISSING_COUNT}} MISSING</div>
     <div class="verdict {{VERDICT_CLASS}}">{{VERDICT_TEXT}}</div>
