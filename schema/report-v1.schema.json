@@ -2,81 +2,43 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://jakeraft.github.io/clier-qa/schema/report-v1.schema.json",
   "title": "clier QA Report (v1)",
-  "description": "Flat, two-section QA report. Section A (exploration.findings) carries qualitative agent-authored judgements; section B (scenarios) carries deterministic CLI verifications. No phases, no taxonomy, no nested grouping.",
+  "description": "Flat QA report. One run produces one report: top-level metadata + narrative summary + a flat findings array. No wrappers, no sub-sections.",
   "type": "object",
-  "required": ["schema_version", "run", "exploration", "scenarios"],
+  "required": ["schema_version", "id", "started_at", "finished_at", "clier_version", "summary", "findings"],
   "additionalProperties": false,
   "properties": {
     "schema_version": { "const": 1 },
-
-    "run": {
+    "id":             { "type": "string" },
+    "started_at":     { "type": "string", "format": "date-time" },
+    "finished_at":    { "type": "string", "format": "date-time" },
+    "os":             { "type": "string" },
+    "clier_version":  { "type": "string" },
+    "auth_target":    { "type": "string" },
+    "disposable_prefix": { "type": "string" },
+    "agent": {
       "type": "object",
-      "required": ["id", "started_at", "finished_at", "environment", "agent"],
       "additionalProperties": false,
       "properties": {
-        "id":          { "type": "string" },
-        "started_at":  { "type": "string", "format": "date-time" },
-        "finished_at": { "type": "string", "format": "date-time" },
-        "environment": {
-          "type": "object",
-          "required": ["os", "clier_version", "auth_target", "disposable_prefix"],
-          "additionalProperties": false,
-          "properties": {
-            "os":                { "type": "string" },
-            "clier_version":     { "type": "string" },
-            "auth_target":       { "type": "string" },
-            "disposable_prefix": { "type": "string" },
-            "modes_exercised": {
-              "type": "array",
-              "items": { "enum": ["agent", "user"] },
-              "uniqueItems": true
-            }
-          }
-        },
-        "agent": {
-          "type": "object",
-          "required": ["kind"],
-          "additionalProperties": false,
-          "properties": {
-            "kind":  { "enum": ["claude", "codex"] },
-            "model": { "type": "string" }
-          }
-        }
+        "kind":  { "enum": ["claude", "codex"] },
+        "model": { "type": "string" }
       }
     },
-
-    "exploration": {
-      "type": "object",
-      "required": ["summary", "findings"],
-      "additionalProperties": false,
-      "description": "Section A — agent-as-consumer qualitative judgements. `summary` is one narrative paragraph; `findings[]` is a flat list aligned (loosely) with the seven trust points.",
-      "properties": {
-        "summary":  { "type": "string" },
-        "findings": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/finding" }
-        }
-      }
-    },
-
-    "scenarios": {
+    "summary":  { "type": "string", "description": "One narrative paragraph describing the run." },
+    "findings": {
       "type": "array",
-      "description": "Section B — deterministic scenarios. Flat list, no grouping.",
-      "items": { "$ref": "#/$defs/scenario" }
+      "items": { "$ref": "#/$defs/finding" }
     }
   },
 
   "$defs": {
-
     "status": {
       "enum": ["pass", "fail", "skip", "error"],
-      "description": "pass: asserted and passed · fail: asserted and failed · skip: not exercised · error: test machinery failure (outcome unknown)."
+      "description": "pass: verified ok · fail: CLI defect · skip: not exercised · error: test-machinery failure."
     },
 
     "finding": {
       "type": "object",
-      "description": "An agent-authored judgement about the tool. source is implicitly 'agent'.",
-      "required": ["id", "title", "status", "rationale", "evidence"],
+      "required": ["id", "title", "status", "rationale"],
       "additionalProperties": false,
       "properties": {
         "id": {
@@ -89,13 +51,13 @@
         "fail_note":    { "type": "string" },
         "skip_reason":  { "type": "string" },
         "error_detail": { "type": "string" },
-        "evidence": {
-          "oneOf": [
-            { "$ref": "#/$defs/evidenceCommand" },
-            { "$ref": "#/$defs/evidenceScenario" },
-            { "$ref": "#/$defs/evidenceObservation" }
-          ]
-        }
+        "command":        { "type": "string",  "description": "Primary CLI invocation the finding is about, if any." },
+        "exit_code":      { "type": "integer" },
+        "stdout_excerpt": { "type": "string" },
+        "stderr_excerpt": { "type": "string" },
+        "duration_ms":    { "type": "integer", "minimum": 0 },
+        "steps":      { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "references": { "type": "array", "items": { "$ref": "#/$defs/reference" } }
       },
       "allOf": [
         { "if": { "properties": { "status": { "const": "fail"  } }, "required": ["status"] },
@@ -105,165 +67,35 @@
         { "if": { "properties": { "status": { "const": "error" } }, "required": ["status"] },
           "then": { "required": ["error_detail"] } }
       ]
-    },
-
-    "scenario": {
-      "type": "object",
-      "description": "A deterministic verification, scripted or agent-designed.",
-      "required": ["id", "title", "source", "status", "evidence"],
-      "additionalProperties": false,
-      "properties": {
-        "id": {
-          "type": "string",
-          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$"
-        },
-        "title":        { "type": "string" },
-        "source":       { "enum": ["script", "agent"] },
-        "status":       { "$ref": "#/$defs/status" },
-        "rationale":    { "type": "string" },
-        "fail_note":    { "type": "string" },
-        "skip_reason":  { "type": "string" },
-        "error_detail": { "type": "string" },
-        "evidence": {
-          "oneOf": [
-            { "$ref": "#/$defs/evidenceCommand" },
-            { "$ref": "#/$defs/evidenceScenario" }
-          ]
-        }
-      },
-      "allOf": [
-        { "if": { "properties": { "status": { "const": "fail"  } }, "required": ["status"] },
-          "then": { "required": ["fail_note"] } },
-        { "if": { "properties": { "status": { "const": "skip"  } }, "required": ["status"] },
-          "then": { "required": ["skip_reason"] } },
-        { "if": { "properties": { "status": { "const": "error" } }, "required": ["status"] },
-          "then": { "required": ["error_detail"] } },
-        { "if": { "properties": { "source": { "const": "agent" } }, "required": ["source"] },
-          "then": { "required": ["rationale"] } }
-      ]
-    },
-
-    "expectation": {
-      "type": "object",
-      "required": ["kind", "pass"],
-      "additionalProperties": false,
-      "properties": {
-        "kind": {
-          "enum": [
-            "exit_code",
-            "stdout_contains", "stderr_contains",
-            "stdout_matches",  "stderr_matches",
-            "json_path_exists", "json_path_equals", "json_path_matches",
-            "custom"
-          ]
-        },
-        "expected": {},
-        "actual":   {},
-        "path":     { "type": "string" },
-        "pass":     { "type": "boolean" },
-        "note":     { "type": "string" }
-      }
-    },
-
-    "evidenceCommand": {
-      "type": "object",
-      "required": ["kind", "command"],
-      "additionalProperties": false,
-      "properties": {
-        "kind":           { "const": "command" },
-        "command":        { "type": "string" },
-        "exit_code":      { "type": "integer" },
-        "stdout_excerpt": { "type": "string" },
-        "stderr_excerpt": { "type": "string" },
-        "duration_ms":    { "type": "integer", "minimum": 0 },
-        "expectations": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/expectation" }
-        }
-      }
-    },
-
-    "evidenceScenario": {
-      "type": "object",
-      "required": ["kind", "steps"],
-      "additionalProperties": false,
-      "properties": {
-        "kind":             { "const": "scenario" },
-        "precondition":     { "type": "string" },
-        "expected_outcome": { "type": "string" },
-        "actual_outcome":   { "type": "string" },
-        "steps": {
-          "type": "array",
-          "minItems": 1,
-          "items": { "$ref": "#/$defs/step" }
-        }
-      }
-    },
-
-    "evidenceObservation": {
-      "type": "object",
-      "required": ["kind", "rationale"],
-      "additionalProperties": false,
-      "properties": {
-        "kind":      { "const": "observation" },
-        "rationale": { "type": "string" },
-        "references": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["kind"],
-            "additionalProperties": false,
-            "properties": {
-              "kind":    { "enum": ["help_output", "tutorial_step", "doc_excerpt", "url"] },
-              "label":   { "type": "string" },
-              "excerpt": { "type": "string" },
-              "url":     { "type": "string", "format": "uri" }
-            }
-          }
-        }
-      }
     },
 
     "step": {
       "type": "object",
-      "required": ["role", "label", "status"],
+      "required": ["label", "status"],
       "additionalProperties": false,
       "properties": {
-        "role":           { "enum": ["setup", "action", "assertion", "teardown"] },
         "label":          { "type": "string" },
         "command":        { "type": "string" },
-        "fs_op": {
-          "type": "object",
-          "required": ["kind", "path"],
-          "additionalProperties": false,
-          "properties": {
-            "kind":    { "enum": ["write", "edit", "remove", "chmod"] },
-            "path":    { "type": "string" },
-            "summary": { "type": "string" }
-          }
-        },
         "exit_code":      { "type": "integer" },
         "stdout_excerpt": { "type": "string" },
         "stderr_excerpt": { "type": "string" },
         "duration_ms":    { "type": "integer", "minimum": 0 },
-        "captured": {
-          "type": "object",
-          "additionalProperties": { "type": ["string", "number", "boolean"] }
-        },
-        "expectations": {
-          "type": "array",
-          "items": { "$ref": "#/$defs/expectation" }
-        },
-        "status":       { "$ref": "#/$defs/status" },
-        "skip_reason":  { "type": "string" },
-        "error_detail": { "type": "string" }
-      },
-      "allOf": [
-        { "if": { "properties": { "status": { "const": "skip"  } }, "required": ["status"] },
-          "then": { "required": ["skip_reason"] } },
-        { "if": { "properties": { "status": { "const": "error" } }, "required": ["status"] },
-          "then": { "required": ["error_detail"] } }
-      ]
+        "status":         { "$ref": "#/$defs/status" },
+        "skip_reason":    { "type": "string" },
+        "error_detail":   { "type": "string" }
+      }
+    },
+
+    "reference": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind":    { "enum": ["help_output", "tutorial_step", "doc_excerpt", "url"] },
+        "label":   { "type": "string" },
+        "excerpt": { "type": "string" },
+        "url":     { "type": "string", "format": "uri" }
+      }
     }
   }
 }

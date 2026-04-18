@@ -10,16 +10,15 @@
 <div id="app" class="doc"></div>
 
 <script>
-// ─────────────────────────────────────────────────────────────────────
-// clier QA SPA renderer — consumes report-v1 schema
-// Hash routing:
-//   #/              → list view  (reports/index.json)
-//   #/report/<id>   → detail view (reports/<id>.json)
-// ─────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────
+// clier QA SPA — consumes report-v1 (flat shape)
+// #/              → list view   (reports/index.json)
+// #/report/<id>   → detail view (reports/<id>.json)
+// ─────────────────────────────────────────────────────────────────
 
 const $app = document.getElementById('app');
 
-const h = (tag, attrs = {}, ...children) => {
+const h = (tag, attrs = {}, ...kids) => {
   const el = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
     if (v === undefined || v === null || v === false) continue;
@@ -28,7 +27,7 @@ const h = (tag, attrs = {}, ...children) => {
     else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
     else el.setAttribute(k, v === true ? '' : v);
   }
-  for (const c of children.flat()) {
+  for (const c of kids.flat()) {
     if (c === null || c === undefined || c === false) continue;
     el.append(c.nodeType ? c : document.createTextNode(String(c)));
   }
@@ -41,18 +40,16 @@ const md = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>')
                         .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
 
 const route = () => {
-  const h = location.hash.replace(/^#\/?/, '');
-  if (!h) return { name: 'list' };
-  const m = h.match(/^report\/(.+)$/);
-  if (m) return { name: 'detail', id: decodeURIComponent(m[1]) };
-  return { name: 'list' };
+  const hash = location.hash.replace(/^#\/?/, '');
+  if (!hash) return { name: 'list' };
+  const m = hash.match(/^report\/(.+)$/);
+  return m ? { name: 'detail', id: decodeURIComponent(m[1]) } : { name: 'list' };
 };
 
 const render = async () => {
   clear($app);
   try {
-    if (route().name === 'list') await renderList();
-    else await renderDetail(route().id);
+    route().name === 'list' ? await renderList() : await renderDetail(route().id);
   } catch (e) {
     $app.append(h('div', { class: 'finding fail' },
       h('div', { class: 'finding-head' }, 'render error'),
@@ -63,7 +60,7 @@ const render = async () => {
 window.addEventListener('hashchange', render);
 window.addEventListener('DOMContentLoaded', render);
 
-// ═════ LIST ═══════════════════════════════════════════════════════════
+// ═════ LIST ══════════════════════════════════════════════════════════
 async function renderList() {
   const res = await fetch('reports/index.json', { cache: 'no-cache' });
   if (!res.ok) throw new Error(`reports/index.json: ${res.status}`);
@@ -73,12 +70,12 @@ async function renderList() {
   $app.append(
     h('div', { class: 'ix-head' },
       h('h1', {}, 'clier QA Reports'),
-      h('p', { html: 'QA from the <strong>agent-as-consumer</strong> lens. Reports are data — the site renders them from <code>reports/*.json</code> against <code>report-v1</code>.' })
+      h('p', { html: 'QA from the <strong>agent-as-consumer</strong> lens. Reports are data — rendered from <code>reports/*.json</code> against <code>report-v1</code>.' })
     )
   );
 
   if (!items.length) {
-    $app.append(h('p', { class: 'empty' }, 'No reports yet.'),
+    $app.append(h('p', { class: 'empty', style: 'padding: 24px; text-align: center; color: var(--c-muted);' }, 'No reports yet.'),
       h('footer', {}, h('div', {}, 'schema report-v1')));
     return;
   }
@@ -86,17 +83,16 @@ async function renderList() {
   const tbody = h('tbody');
   for (const it of items) {
     const date = fmtDate(it.id);
-    const cf = it.counts?.findings || { pass:0, fail:0, skip:0, error:0 };
-    const cs = it.counts?.scenarios || { pass:0, fail:0, skip:0, error:0 };
-    const countsText = `F ${cf.pass}/${cf.fail}/${cf.skip}/${cf.error} · S ${cs.pass}/${cs.fail}/${cs.skip}/${cs.error}`;
+    const c = it.counts || { pass: 0, fail: 0, skip: 0, error: 0 };
+    const countsText = `${c.pass} / ${c.fail} / ${c.skip} / ${c.error}`;
     const verdict = it.verdict || 'pass';
     const href = `#/report/${encodeURIComponent(it.id)}`;
     tbody.append(
       h('tr', {},
-        h('td', { class: 'date'    }, h('a', { href }, date)),
-        h('td', {},                 h('a', { href }, it.clier_version || '—')),
-        h('td', {},                 h('a', { href, html: md(it.summary || '') })),
-        h('td', { class: 'counts'  }, h('a', { href }, countsText)),
+        h('td', { class: 'date'   }, h('a', { href }, date)),
+        h('td', {},                  h('a', { href }, it.clier_version || '—')),
+        h('td', {},                  h('a', { href, html: md(it.summary || '') })),
+        h('td', { class: 'counts' }, h('a', { href }, countsText)),
         h('td', { class: `verdict ${verdict}` }, h('a', { href }, verdict.toUpperCase()))
       )
     );
@@ -108,7 +104,7 @@ async function renderList() {
         h('th', {}, 'Run'),
         h('th', {}, 'clier'),
         h('th', {}, 'Summary'),
-        h('th', {}, 'F P/F/S/E · S P/F/S/E'),
+        h('th', {}, 'P / F / S / E'),
         h('th', {}, 'Verdict'))),
       tbody),
     h('footer', {},
@@ -117,99 +113,83 @@ async function renderList() {
   );
 }
 
-// ═════ DETAIL ═════════════════════════════════════════════════════════
+// ═════ DETAIL ════════════════════════════════════════════════════════
 async function renderDetail(id) {
   const res = await fetch(`reports/${id}.json`, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`reports/${id}.json: ${res.status}`);
   const r = await res.json();
   if (r.schema_version !== 1) throw new Error(`unsupported schema_version: ${r.schema_version}`);
 
-  const cf = countBy(r.exploration?.findings || [], 'status');
-  const cs = countBy(r.scenarios || [], 'status');
-  const verdict = (cf.fail + cf.error + cs.fail + cs.error) === 0 ? 'PASS' : 'FAIL';
+  const findings = r.findings || [];
+  const c = countBy(findings, 'status');
+  const verdict = (c.fail + c.error) === 0 ? 'PASS' : 'FAIL';
 
   $app.append(h('div', { class: 'crumb' },
-    h('a', { href: '#/' }, 'QA Reports'), ' / ', r.run.id));
+    h('a', { href: '#/' }, 'QA Reports'), ' / ', r.id));
 
   $app.append(
     h('div', { class: 'doc-title' }, 'clier QA Report'),
-    h('div', { class: 'doc-sub', html: `Run <code>${esc(r.run.id)}</code> · Verdict <strong>${verdict}</strong>` }),
-    renderMeta(r.run),
-    renderSummary(cf, cs, verdict),
-    renderExploration(r.exploration),
-    renderScenarios(r.scenarios || []),
+    h('div', { class: 'doc-sub', html: `Run <code>${esc(r.id)}</code> · Verdict <strong>${verdict}</strong>` }),
+    renderMeta(r),
+    renderSummary(c, verdict, r.summary),
+    renderFindings(findings),
     h('footer', {},
-      h('div', { html: `Run <code>${esc(r.run.id)}</code>` }),
+      h('div', { html: `Run <code>${esc(r.id)}</code>` }),
       h('div', { html: 'Schema <code>report-v1</code>' }))
   );
 }
 
-function renderMeta(run) {
-  const env = run.environment || {};
-  const modes = (env.modes_exercised || []).join(', ') || '—';
-  const agentText = `${run.agent.kind}${run.agent.model ? ' / ' + run.agent.model : ''}`;
+function renderMeta(r) {
+  const modelText = r.agent ? `${r.agent.kind}${r.agent.model ? ' / ' + r.agent.model : ''}` : '—';
   return h('table', { class: 'meta' }, h('tbody', {},
     h('tr', {},
-      h('th', {}, 'Started'),  h('td', {}, fmtTs(run.started_at)),
-      h('th', {}, 'Finished'), h('td', {}, fmtTs(run.finished_at))),
+      h('th', {}, 'Started'),  h('td', {}, fmtTs(r.started_at)),
+      h('th', {}, 'Finished'), h('td', {}, fmtTs(r.finished_at))),
     h('tr', {},
-      h('th', {}, 'Duration'), h('td', {}, fmtDuration(run.started_at, run.finished_at)),
-      h('th', {}, 'OS'),       h('td', {}, env.os || '—')),
+      h('th', {}, 'Duration'), h('td', {}, fmtDuration(r.started_at, r.finished_at)),
+      h('th', {}, 'OS'),       h('td', {}, r.os || '—')),
     h('tr', {},
-      h('th', {}, 'clier'),    h('td', {}, 'v' + (env.clier_version || '—')),
-      h('th', {}, 'Agent'),    h('td', { class: 'narrow' }, agentText)),
+      h('th', {}, 'clier'),    h('td', {}, 'v' + (r.clier_version || '—')),
+      h('th', {}, 'Agent'),    h('td', { class: 'narrow' }, modelText)),
     h('tr', {},
-      h('th', {}, 'Auth'),     h('td', {}, env.auth_target || '—'),
-      h('th', {}, 'Prefix'),   h('td', {}, env.disposable_prefix || '—')),
-    h('tr', {},
-      h('th', {}, 'Modes'),    h('td', { class: 'narrow' }, modes),
-      h('th', {}, 'Schema'),   h('td', {}, 'report-v1'))
+      h('th', {}, 'Auth'),     h('td', {}, r.auth_target || '—'),
+      h('th', {}, 'Prefix'),   h('td', {}, r.disposable_prefix || '—'))
   ));
 }
 
-function renderSummary(cf, cs, verdict) {
+function renderSummary(c, verdict, summary) {
   const sec = h('section', {});
   sec.append(h('h2', { html: `<span class="num">1.</span>Summary` }));
   sec.append(h('table', { class: 't' },
     h('thead', {}, h('tr', {},
-      h('th', {}, 'Area'),
       h('th', {}, 'Total'), h('th', {}, 'Pass'),
       h('th', {}, 'Fail'), h('th', {}, 'Error'), h('th', {}, 'Skip'))),
     h('tbody', {},
       h('tr', {},
-        h('td', {}, 'Exploration findings'),
-        h('td', { class: 'num' },    cf.total || 0),
-        h('td', { class: 'st pass' },cf.pass || 0),
-        h('td', { class: 'st fail' },cf.fail || 0),
-        h('td', { class: 'st error'},cf.error || 0),
-        h('td', { class: 'st skip' },cf.skip || 0)),
-      h('tr', {},
-        h('td', {}, 'Scripted scenarios'),
-        h('td', { class: 'num' },    cs.total || 0),
-        h('td', { class: 'st pass' },cs.pass || 0),
-        h('td', { class: 'st fail' },cs.fail || 0),
-        h('td', { class: 'st error'},cs.error || 0),
-        h('td', { class: 'st skip' },cs.skip || 0)))
+        h('td', { class: 'num' },     c.total || 0),
+        h('td', { class: 'st pass' }, c.pass || 0),
+        h('td', { class: 'st fail' }, c.fail || 0),
+        h('td', { class: 'st error'}, c.error || 0),
+        h('td', { class: 'st skip' }, c.skip || 0)))
   ));
+  if (summary) sec.append(h('p', { style: 'margin-top: 12px;', html: md(summary) }));
   return sec;
 }
 
-function renderExploration(exp) {
+function renderFindings(findings) {
   const sec = h('section', {});
-  sec.append(h('h2', { html: `<span class="num">2.</span>Autonomous exploration` }));
-  if (exp?.summary) sec.append(h('p', { html: md(exp.summary) }));
+  sec.append(h('h2', { html: `<span class="num">2.</span>Findings` }));
 
-  const findings = exp?.findings || [];
   if (!findings.length) {
-    sec.append(h('p', { class: 'empty' }, 'No findings recorded.'));
+    sec.append(h('p', { class: 'empty' }, 'No findings in this run.'));
     return sec;
   }
 
   const thead = h('thead', {}, h('tr', {},
     h('th', { class: 'col-num' }, '#'),
     h('th', {}, 'Finding'),
-    h('th', { class: 'col-st'  }, 'Status'),
-    h('th', {}, 'Rationale / Evidence')));
+    h('th', { class: 'col-st' }, 'Status'),
+    h('th', {}, 'Evidence')));
 
   const tbody = h('tbody');
   findings.forEach((f, i) => tbody.append(renderFindingRow(i + 1, f)));
@@ -218,24 +198,41 @@ function renderExploration(exp) {
 }
 
 function renderFindingRow(i, f) {
-  const ev = f.evidence || {};
   const cell = h('td', {});
-  if (f.rationale)    cell.append(h('span', { class: 'ev agent', html: md(f.rationale) }));
+
+  // rationale is always present for findings
+  cell.append(h('span', { class: 'ev agent', html: md(f.rationale) }));
+
   if (f.fail_note)    cell.append(h('span', { class: 'ev fail',  html: esc(f.fail_note) }));
   if (f.skip_reason)  cell.append(h('span', { class: 'ev',       html: `<em>${esc(f.skip_reason)}</em>` }));
   if (f.error_detail) cell.append(h('span', { class: 'ev fail',  html: esc(f.error_detail) }));
 
-  if (ev.kind === 'command') {
-    const bits = [];
-    if (ev.command)        bits.push(`<span class="ev-label">cmd</span><code>${esc(ev.command)}</code>`);
-    if (ev.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${ev.exit_code}`);
-    if (ev.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(ev.stdout_excerpt)}`);
-    if (ev.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(ev.stderr_excerpt)}`);
-    if (bits.length) cell.append(h('span', { class: 'ev', html: bits.join('  ') }));
-  } else if (ev.kind === 'observation' && ev.references?.length) {
-    for (const ref of ev.references) {
-      if (ref.label)   cell.append(h('span', { class: 'excerpt-label' }, ref.label));
-      if (ref.excerpt) cell.append(h('div',  { class: 'excerpt' }, ref.excerpt));
+  // inline command evidence
+  const bits = [];
+  if (f.command)        bits.push(`<span class="ev-label">cmd</span><code>${esc(f.command)}</code>`);
+  if (f.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${f.exit_code}`);
+  if (f.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(f.stdout_excerpt)}`);
+  if (f.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(f.stderr_excerpt)}`);
+  if (f.duration_ms !== undefined) bits.push(`<span class="ev-label">dur</span>${fmtMs(f.duration_ms)}`);
+  if (bits.length) cell.append(h('span', { class: 'ev' + (f.status === 'fail' || f.status === 'error' ? ' fail' : ''), html: bits.join('  ') }));
+
+  // multi-step
+  if (f.steps?.length) {
+    const stbody = h('tbody');
+    f.steps.forEach((st, k) => stbody.append(renderStepRow(k + 1, st)));
+    cell.append(h('table', { class: 't steps', style: 'margin-top: 6px;' },
+      h('thead', {}, h('tr', {},
+        h('th', { class: 'col-num' }, '#'),
+        h('th', {}, 'Step'),
+        h('th', { class: 'col-st' }, 'Status'))),
+      stbody));
+  }
+
+  // references
+  if (f.references?.length) {
+    for (const ref of f.references) {
+      if (ref.label) cell.append(h('span', { class: 'excerpt-label' }, ref.label));
+      if (ref.excerpt) cell.append(h('div', { class: 'excerpt' }, ref.excerpt));
       else if (ref.url) cell.append(h('div', { class: 'excerpt' }, ref.url));
     }
   }
@@ -247,120 +244,20 @@ function renderFindingRow(i, f) {
     cell);
 }
 
-function renderScenarios(scenarios) {
-  const sec = h('section', {});
-  sec.append(h('h2', { html: `<span class="num">3.</span>Scripted scenarios` }));
-
-  if (!scenarios.length) {
-    sec.append(h('p', { class: 'empty' }, 'No scenarios in this run.'));
-    return sec;
-  }
-
-  scenarios.forEach((s, i) => sec.append(renderScenario(3, i + 1, s)));
-  return sec;
-}
-
-function renderScenario(secNum, subIdx, s) {
-  const isFail = s.status === 'fail' || s.status === 'error';
-  const wrap = h('div', {});
-  const titleHtml = `<span class="num">${secNum}.${subIdx}</span>${esc(s.title)}` +
-    (isFail ? ` <span style="color:var(--c-fail);font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:0.5px;">· ${s.status.toUpperCase()}</span>` : '');
-  wrap.append(h('h3', { html: titleHtml }));
-
-  const ev = s.evidence || {};
-  if (ev.kind === 'command') {
-    wrap.append(renderCommandCard(s));
-    return wrap;
-  }
-
-  const card = h('div', { class: `scenario ${isFail ? 'fail' : ''}` });
-
-  const outcome = h('dl', { class: 'outcome' });
-  if (ev.precondition)     outcome.append(h('dt', {}, 'precondition'), h('dd', {}, ev.precondition));
-  if (ev.expected_outcome) outcome.append(h('dt', {}, 'expected'),     h('dd', {}, ev.expected_outcome));
-  if (ev.actual_outcome)   outcome.append(h('dt', {}, 'actual'),
-                                          h('dd', { class: isFail ? 'fail' : 'pass' }, ev.actual_outcome));
-  card.append(outcome);
-
-  const tbody = h('tbody');
-  (ev.steps || []).forEach((st, i) => tbody.append(renderStepRow(i + 1, st)));
-  card.append(h('table', { class: 't steps' },
-    h('thead', {}, h('tr', {},
-      h('th', { class: 'col-num'  }, '#'),
-      h('th', { class: 'col-role' }, 'Role'),
-      h('th', {}, 'Action'),
-      h('th', { class: 'col-st'   }, 'Status'),
-      h('th', { class: 'col-dur'  }, 'Dur'))),
-    tbody));
-
-  wrap.append(card);
-
-  if (s.fail_note)    wrap.append(h('div', { class: 'finding fail' },
-    h('div', { class: 'finding-head' }, 'fail note'),
-    h('p', { html: md(s.fail_note) })));
-  if (s.error_detail) wrap.append(h('div', { class: 'finding error' },
-    h('div', { class: 'finding-head' }, 'error detail'),
-    h('p', { html: md(s.error_detail) })));
-
-  return wrap;
-}
-
-function renderCommandCard(s) {
-  const ev = s.evidence;
-  const card = h('div', { class: 'scenario' });
-  const body = h('div', { style: 'padding:6px 0;' });
-  const bits = [];
-  if (ev.command)        bits.push(`<span class="ev-label">cmd</span><code>${esc(ev.command)}</code>`);
-  if (ev.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${ev.exit_code}`);
-  if (ev.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(ev.stdout_excerpt)}`);
-  if (ev.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(ev.stderr_excerpt)}`);
-  body.append(h('span', { class: 'ev', html: bits.join('  ') }));
-  body.append(h('span', { class: 'st ' + s.status, style: 'margin-left:10px;' }, s.status.toUpperCase()));
-  card.append(body);
-  return card;
-}
-
 function renderStepRow(num, st) {
   const body = h('td', {});
   body.append(h('span', { class: 'step-label', html: md(st.label) }));
-  if (st.command)  body.append(h('span', { class: 'ev', html: `<code>${esc(st.command)}</code>` }));
-  if (st.fs_op)    body.append(h('span', { class: 'ev',
-    html: `<code>${esc(st.fs_op.kind)} ${esc(st.fs_op.path)}${st.fs_op.summary ? ' (' + esc(st.fs_op.summary) + ')' : ''}</code>` }));
-
+  if (st.command) body.append(h('span', { class: 'ev', html: `<code>${esc(st.command)}</code>` }));
   const bits = [];
   if (st.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${st.exit_code}`);
   if (st.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(st.stdout_excerpt)}`);
   if (st.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(st.stderr_excerpt)}`);
   if (bits.length) body.append(h('span', { class: 'ev' + (st.status === 'fail' ? ' fail' : ''), html: bits.join('  ') }));
-
-  if (st.captured) {
-    const entries = Object.entries(st.captured).map(([k, v]) => `${k}=${v}`).join('; ');
-    body.append(h('span', { class: 'captured' }, entries));
-  }
-  if (st.expectations?.length) body.append(renderExpectations(st.expectations));
-  if (st.status === 'skip' && st.skip_reason)
-    body.append(h('span', { class: 'ev', html: `<em>${esc(st.skip_reason)}</em>` }));
-
+  if (st.skip_reason) body.append(h('span', { class: 'ev', html: `<em>${esc(st.skip_reason)}</em>` }));
   return h('tr', { class: `step ${st.status}` },
     h('td', { class: 'num' }, num),
-    h('td', { class: `role ${st.role || ''}` }, st.role === 'assertion' ? 'assert' : (st.role || '')),
     body,
-    h('td', { class: `st ${st.status}` }, st.status.toUpperCase()),
-    h('td', { class: 'dur' }, st.duration_ms !== undefined ? fmtMs(st.duration_ms) : '—'));
-}
-
-function renderExpectations(exps) {
-  const lines = exps.map(e => {
-    const mk = e.pass ? '✓' : '✗';
-    if (e.kind === 'json_path_equals')
-      return `${mk} ${e.path} == ${JSON.stringify(e.expected)}${e.actual !== undefined ? ` (actual ${JSON.stringify(e.actual)})` : ''}`;
-    if (e.kind === 'exit_code')       return `${mk} exit_code ${e.expected}`;
-    if (e.kind === 'stderr_contains') return `${mk} stderr contains ${JSON.stringify(e.expected)}`;
-    if (e.kind === 'stdout_contains') return `${mk} stdout contains ${JSON.stringify(e.expected)}`;
-    if (e.kind === 'custom')          return `${mk} ${e.note || ''}`;
-    return `${mk} ${e.kind}`;
-  }).join('\n');
-  return h('span', { class: 'ev', html: `<span class="ev-label">verify</span>${esc(lines)}` });
+    h('td', { class: `st ${st.status}` }, st.status.toUpperCase()));
 }
 
 // ─── utils ───────────────────────────────────────────────────────────
