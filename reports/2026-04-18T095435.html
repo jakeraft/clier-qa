@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>clier QA — 2026-04-18 09:54 KST</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f8f9fa; color:#212529; font-size:14px; line-height:1.5; }
+  .wrap { max-width:860px; margin:0 auto; padding:40px 24px; }
+  header { background:#fff; padding:24px; border-radius:8px; border:1px solid #dee2e6; margin-bottom:16px; }
+  header h1 { font-size:16px; font-weight:600; margin-bottom:4px; }
+  header .meta { font-size:12px; color:#6c757d; }
+  header .meta + .meta { margin-top:2px; }
+  header .meta code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:11px; background:#f1f3f5; padding:1px 5px; border-radius:3px; color:#343a40; }
+  .stats { display:flex; gap:8px; margin-bottom:16px; }
+  .stat { flex:1; background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; text-align:center; }
+  .stat .n { font-size:32px; font-weight:700; }
+  .stat .l { font-size:11px; color:#6c757d; text-transform:uppercase; }
+  .stat.pass .n { color:#198754; }
+  .stat.fail .n { color:#dc3545; }
+  .stat.skip .n { color:#adb5bd; }
+  .phase { background:#fff; border:1px solid #dee2e6; border-left:4px solid #adb5bd; border-radius:8px; margin-bottom:12px; overflow:hidden; }
+  .phase.agent { border-left-color:#6f42c1; }
+  .phase.user  { border-left-color:#0d6efd; }
+  .phase.pass  { border-top:1px solid #b7dfc5; }
+  .phase.fail  { border-top:1px solid #f1aeb5; }
+  .phase-head { padding:12px 16px; background:#f8f9fa; border-bottom:1px solid #dee2e6; display:flex; align-items:center; gap:10px; }
+  .phase-num { font-size:11px; font-weight:700; color:#fff; background:#adb5bd; padding:3px 8px; border-radius:10px; letter-spacing:0.3px; }
+  .phase.agent .phase-num { background:#6f42c1; }
+  .phase.user  .phase-num { background:#0d6efd; }
+  .phase-title { font-size:13px; font-weight:600; flex:1; }
+  .phase-verdict { font-size:10px; font-weight:700; padding:2px 7px; border-radius:10px; }
+  .phase-verdict.pass { background:#d1e7dd; color:#0f5132; }
+  .phase-verdict.fail { background:#f8d7da; color:#842029; }
+  .phase-verdict.skip { background:#e2e3e5; color:#41464b; }
+  .phase-chips { display:flex; gap:4px; }
+  .chip { font-size:10px; padding:2px 6px; border-radius:8px; font-weight:600; }
+  .chip.p { background:#d1e7dd; color:#0f5132; }
+  .chip.f { background:#f8d7da; color:#842029; }
+  .chip.s { background:#e2e3e5; color:#41464b; }
+  .phase-body { padding:0; }
+  .phase-narrative { padding:14px 16px; font-size:13px; border-bottom:1px solid #f1f3f5; }
+  .phase-narrative:last-child { border-bottom:none; }
+  .phase-narrative p + p { margin-top:8px; }
+  .phase-narrative ul { list-style:disc; padding-left:18px; margin:6px 0; }
+  .phase-narrative li { margin:2px 0; }
+  .phase-narrative code, .test-name code, .sub-head code, .phase-title code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; background:#f1f3f5; padding:1px 5px; border-radius:3px; }
+  .phase-narrative b.sub-head { display:block; font-size:11px; text-transform:uppercase; letter-spacing:0.5px; color:#495057; margin-bottom:6px; }
+  .test-row { padding:8px 16px; border-bottom:1px solid #f8f9fa; display:flex; align-items:center; gap:8px; font-size:13px; }
+  .test-row:last-child { border-bottom:none; }
+  .ico { font-size:12px; width:16px; text-align:center; }
+  .ico.pass { color:#198754; }
+  .ico.fail { color:#dc3545; }
+  .ico.skip { color:#adb5bd; }
+  .test-name { flex:1; }
+  .test-cmd { font-size:11px; color:#6c757d; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .guidance-tag { font-size:10px; padding:1px 5px; border-radius:3px; font-weight:600; }
+  .guidance-tag.good { background:#d1e7dd; color:#0f5132; }
+  .guidance-tag.poor { background:#fff3cd; color:#664d03; }
+  .guidance-tag.missing { background:#f8d7da; color:#842029; }
+  .fail-note { padding:4px 16px 8px 40px; font-size:12px; color:#842029; background:#fff5f5; }
+  .vtable { width:100%; border-collapse:collapse; font-size:12px; margin-top:4px; }
+  .vtable th, .vtable td { padding:6px 0; text-align:left; border-bottom:1px solid #f1f3f5; }
+  .vtable th { font-size:10px; font-weight:600; text-transform:uppercase; color:#6c757d; }
+  .vtable td code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; }
+  .bottom { background:#fff; border:1px solid #dee2e6; border-radius:8px; padding:16px; display:flex; justify-content:space-between; align-items:center; }
+  .bottom .guidance-summary { font-size:12px; color:#6c757d; }
+  .bottom .verdict { font-size:14px; font-weight:700; }
+  .bottom .verdict.pass { color:#198754; }
+  .bottom .verdict.fail { color:#dc3545; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>clier QA Report</h1>
+    <div class="meta">2026-04-18 09:54 KST · Darwin 24.5.0 arm64 · clier dev</div>
+    <div class="meta">Prefix: <code>qa-20260418094133</code> · Auth target: <code>jakeraft</code></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="n">50</div><div class="l">Tests</div></div>
+    <div class="stat pass"><div class="n">45</div><div class="l">Pass</div></div>
+    <div class="stat fail"><div class="n">3</div><div class="l">Fail</div></div>
+    <div class="stat skip"><div class="n">2</div><div class="l">Skip</div></div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Exploratory</span>
+      <span class="phase-title">Setup + black-box discovery summary</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-narrative">Discovery was straightforward once mode separation was respected: agent mode exposed only <code>run note</code>/<code>run tell</code>, while user mode exposed the full product surface through <code>env -u CLIER_AGENT</code>. The built-in tutorial was largely executable as written, but two UX drifts showed up during real use: dirty <code>pull</code> suggests fixing a <code>remove</code>, and org subcommands accept <code>@org</code> even though help shows bare <code>&lt;org-name&gt;</code>. The largest functional regression was in the iterate flow: after <code>clier push jakeraft/hello-claude</code>, both the forked team and forked instruction returned empty <code>summary</code> fields.</div>
+      <div class="phase-narrative">
+        <b class="sub-head">Resources created this run</b>
+        <ul>
+          <li>Server resources under <code>@clier</code>: <code>qa-20260418094133-prompt</code>, <code>qa-20260418094133-skill</code>, <code>qa-20260418094133-codex</code>, <code>qa-20260418094133-claude</code>, <code>qa-20260418094133-team</code></li>
+          <li>Forked tutorial resources: <code>jakeraft/hello-claude</code>, <code>jakeraft/greeting-prompt</code></li>
+          <li>Temporary org: <code>@qa-20260418094133-org</code></li>
+          <li>Local working copies: <code>@clier/hello-claude</code>, <code>jakeraft/hello-claude</code></li>
+          <li>Runtime sessions: <code>20260418T004958-ca68c4ee</code>, <code>20260418T005050-1d0c958b</code>, <code>20260418T005218-d093169d</code>, <code>20260418T005223-333eea28</code></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="phase agent">
+    <div class="phase-head">
+      <span class="phase-num">Phase 1</span>
+      <span class="phase-title">Agent-mode surface</span>
+      <div class="phase-chips"><span class="chip p">4 pass</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Top-level help exposed only agent-facing surface and pointed to <code>clier run tell</code>/<code>clier run note</code>.</span><span class="test-cmd">clier --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>clier run --help</code> exposed only <code>note</code> and <code>tell</code>.</span><span class="test-cmd">clier run --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Agent work log entry posted successfully using the inherited <code>CLIER_RUN_ID</code>.</span><span class="test-cmd">clier run note 'QA progress…'</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Agent-to-agent messaging delivered inside the active run.</span><span class="test-cmd">clier run tell --to @clier/clier-qa-codex …</span></div>
+    </div>
+  </div>
+
+  <div class="phase user">
+    <div class="phase-head">
+      <span class="phase-num">Phase 2</span>
+      <span class="phase-title">User-mode surface (<code>env -u CLIER_AGENT</code>)</span>
+      <div class="phase-chips"><span class="chip p">5 pass</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Top-level help exposed resources, runtime, workspace, settings, and tutorial flows.</span><span class="test-cmd">env -u CLIER_AGENT clier --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Runtime help exposed <code>attach/list/start/stop/tell/view</code> and hid agent-only note logging.</span><span class="test-cmd">env -u CLIER_AGENT clier run --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Settings and account surfaces were discoverable through help.</span><span class="test-cmd">env -u CLIER_AGENT clier auth --help; config --help; org --help</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Version flag worked in user mode.</span><span class="test-cmd">env -u CLIER_AGENT clier -v</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Attempting <code>run note</code> from user mode failed cleanly as an unknown command.</span><span class="test-cmd">env -u CLIER_AGENT clier run note test</span></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 3</span>
+      <span class="phase-title">Black-box autonomous walk</span>
+      <div class="phase-chips"><span class="chip p">10 pass</span><span class="chip s">1 skip</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Logged-in state returned the active account.</span><span class="test-cmd">env -u CLIER_AGENT clier auth status</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Access token command returned a non-empty token without truncation.</span><span class="test-cmd">env -u CLIER_AGENT clier auth token | wc -c</span></div>
+      <div class="test-row"><span class="ico skip">&#9675;</span><span class="test-name"><code>auth login</code>/<code>auth logout</code> interactive happy path skipped to avoid disrupting the authenticated session and because device flow requires manual user interaction.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Organization list returned the writable <code>@clier</code> org.</span><span class="test-cmd">env -u CLIER_AGENT clier org list</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Config view returned server URL, dashboard URL, credentials path, and workspace dir.</span><span class="test-cmd">env -u CLIER_AGENT clier config view</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Dashboard open printed the configured URL and exited successfully.</span><span class="test-cmd">env -u CLIER_AGENT clier open dashboard</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>list</code>, <code>get</code>, and <code>versions</code> returned valid JSON for <code>@clier/hello-claude</code>.</span><span class="test-cmd">env -u CLIER_AGENT clier list --kind team; get @clier/hello-claude; versions @clier/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Disposable instruction, skill, settings, and team were created under <code>@clier</code>.</span><span class="test-cmd">env -u CLIER_AGENT clier create …</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Editable resources versioned correctly on update.</span><span class="test-cmd">env -u CLIER_AGENT clier edit @clier/qa-…-prompt; edit @clier/qa-…-team</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Query listing surfaced the disposable resources with expected metadata.</span><span class="test-cmd">env -u CLIER_AGENT clier list @clier --query qa-20260418094133</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>delete</code> removed all disposable server resources cleanly.</span><span class="test-cmd">env -u CLIER_AGENT clier delete …</span></div>
+    </div>
+  </div>
+
+  <div class="phase fail">
+    <div class="phase-head">
+      <span class="phase-num">Phase 4</span>
+      <span class="phase-title">Tutorial (<code>clier tutorial</code>) — Phase 1 + Phase 2</span>
+      <span class="phase-verdict fail">FAIL</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-narrative">The tutorial was executable end to end: the canned team cloned, started, exchanged greetings, stopped, and removed cleanly; the forked iterate flow also completed through fork, rewire, clone, edit, push, pull, and cleanup. The drift appeared after the iterate push: the forked instruction and forked team both lost their previously populated <code>summary</code> fields in <code>clier get</code> output, which is a data-loss regression inside the canonical onboarding loop.</div>
+
+      <div class="phase-narrative">
+        <b class="sub-head">hello-claude runtime</b>
+        <p>First start emitted a one-time <code>hint</code>. <code>clier run tell</code> delivered the greeting request to <code>@clier/hello-claude</code>; <code>clier run view</code> then showed hello-claude messaging hello-codex and hello-codex replying successfully. Because attach was not usable from the agent environment, runtime confirmation used <code>run view</code> plus <code>tmux capture-pane -p -t hello-claude-ca68c4ee:0</code> and <code>:1</code>.</p>
+      </div>
+
+      <div class="phase-narrative">
+        <b class="sub-head">Version transitions (iterate scenario)</b>
+        <table class="vtable">
+          <thead><tr><th>Resource</th><th>Before</th><th>After</th><th>Trigger</th></tr></thead>
+          <tbody>
+            <tr><td><code>jakeraft/hello-claude</code></td><td>v1</td><td>v2</td><td><code>clier edit jakeraft/hello-claude --instruction jakeraft/greeting-prompt@1</code></td></tr>
+            <tr><td><code>jakeraft/greeting-prompt</code></td><td>v1</td><td>v2</td><td><code>clier push jakeraft/hello-claude</code> after editing <code>CLAUDE.md</code></td></tr>
+            <tr><td><code>jakeraft/hello-claude</code></td><td>v2</td><td>v3</td><td><code>clier push jakeraft/hello-claude</code> updated the team ref to instruction v2</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="phase-narrative">
+        <b class="sub-head">Sync paths exercised</b>
+        <ul>
+          <li>Dirty <code>pull</code> refused while local <code>CLAUDE.md</code> was modified.</li>
+          <li><code>push</code> from <code>/tmp</code> succeeded with <code>{"status":"pushed","pushed":2,"pulled_after_push":true}</code>.</li>
+          <li>Clean <code>pull</code> from <code>/tmp</code> succeeded after push.</li>
+          <li>Dirty <code>remove</code> refused until the working copy was pushed or reverted.</li>
+          <li>After <code>remove</code> and a fresh <code>clone</code>, first-start <code>hint</code> reappeared.</li>
+        </ul>
+      </div>
+
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Tutorial help accurately described the two-phase onboarding flow.</span><span class="test-cmd">env -u CLIER_AGENT clier tutorial --help</span></div>
+      <div class="test-row"><span class="ico skip">&#9675;</span><span class="test-name">Browser launch was not visually verified because the QA environment has no GUI; command exit and printed URL were checked instead.</span><span class="test-cmd">env -u CLIER_AGENT clier open dashboard</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Canned team cloned and reported a clean status with zero runs.</span><span class="test-cmd">env -u CLIER_AGENT clier clone @clier/hello-claude; status @clier/hello-claude; run list</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">First canned-team start emitted a <code>hint</code> and a run id.</span><span class="test-cmd">env -u CLIER_AGENT clier run start @clier/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Greeting request propagated across both members and completed.</span><span class="test-cmd">env -u CLIER_AGENT clier run tell --run 20260418T004958-ca68c4ee --to @clier/hello-claude …</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>run attach</code> correctly refused inside the agent environment and pointed to a normal terminal.</span><span class="test-cmd">env -u CLIER_AGENT clier run attach 20260418T004958-ca68c4ee</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Canned-team run stopped and the working copy removed cleanly.</span><span class="test-cmd">env -u CLIER_AGENT clier run stop …; remove @clier/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Fork, instruction fork, rewire, and clone worked in the user namespace.</span><span class="test-cmd">env -u CLIER_AGENT clier fork …; edit jakeraft/hello-claude --instruction jakeraft/greeting-prompt@1; clone jakeraft/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Editing <code>CLAUDE.md</code> marked only the forked instruction as modified.</span><span class="test-cmd">env -u CLIER_AGENT clier status jakeraft/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Push bumped the forked instruction to v2 and the team to v3.</span><span class="test-cmd">cd /tmp &amp;&amp; env -u CLIER_AGENT clier push jakeraft/hello-claude</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Forked resource summaries should survive the iterate push.</span><span class="test-cmd">env -u CLIER_AGENT clier get jakeraft/greeting-prompt; get jakeraft/hello-claude</span></div>
+      <div class="fail-note">Before push, both forked resources had non-empty summaries inherited from the source. After push, both <code>summary</code> fields became empty strings even though only instruction content changed. This is user-visible metadata loss in the canonical tutorial path.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 5</span>
+      <span class="phase-title">Clier-specific scenarios</span>
+      <div class="phase-chips"><span class="chip p">6 pass</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Same-workspace double start refused and named the active run id.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Remove while running refused and pointed to <code>clier run stop &lt;run-id&gt;</code>.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Remove with uncommitted changes refused and asked for push or revert.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Hint convention held: first start in a workspace emitted <code>hint</code>, second start in the same workspace did not.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">After <code>remove</code> and fresh <code>clone</code>, first-start <code>hint</code> reappeared.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name"><code>status</code>, <code>push</code>, <code>pull</code>, and <code>run start</code> all worked from <code>/tmp</code>; <code>workspace-dir</code> rejected relative paths and accepted absolute ones.</span></div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 6</span>
+      <span class="phase-title">Error &amp; conflict cases (6 GOOD / 5 POOR / 0 MISSING)</span>
+      <div class="phase-chips"><span class="chip p">8 pass</span><span class="chip f">2 fail</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Missing positional arg on <code>get</code> exited non-zero and included usage.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier get</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Unknown run id on <code>run stop</code> pointed to <code>clier run list</code>.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier run stop no-such-run</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Unknown run id on <code>run view</code> pointed to <code>clier run list</code>.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier run view no-such-run</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Repeat clone on an existing destination suggested <code>remove</code> or <code>pull</code>.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier clone @clier/clier-qa-codex</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Starting a non-cloned team explained the missing working copy and next step.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier run start nope/nope</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">User-mode <code>run note</code> failed clearly as an unavailable command.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier run note test</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Pull on a removed working copy explained that <code>clone</code> must happen first.</span><span class="guidance-tag good">GOOD</span><span class="test-cmd">env -u CLIER_AGENT clier pull jakeraft/hello-claude</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Nonexistent user on org invite explained which principal was missing.</span><span class="guidance-tag poor">POOR</span><span class="test-cmd">env -u CLIER_AGENT clier org invite @clier no-such-user</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Nonexistent resource on <code>get</code>, <code>clone</code>, and <code>delete</code> explained the missing target but offered no next step.</span><span class="guidance-tag poor">POOR</span><span class="test-cmd">env -u CLIER_AGENT clier get nope/nope; clone nope/nope; delete nope/nope</span></div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Dirty <code>pull</code> should recommend fixing <code>pull</code>, not <code>remove</code>.</span><span class="guidance-tag poor">POOR</span><span class="test-cmd">env -u CLIER_AGENT clier pull jakeraft/hello-claude</span></div>
+      <div class="fail-note">The command correctly refused a dirty workspace, but its hint was <code>push or revert before removing</code>. That text belongs to <code>remove</code>, not <code>pull</code>, and will misdirect first-time users.</div>
+      <div class="test-row"><span class="ico fail">&#10007;</span><span class="test-name">Org subcommands should accept the form advertised by help.</span><span class="guidance-tag poor">POOR</span><span class="test-cmd">env -u CLIER_AGENT clier org members qa-20260418094133-org</span></div>
+      <div class="fail-note"><code>org create qa-…</code> produced <code>@qa-…</code>, but <code>org members qa-…</code> and <code>org delete qa-…</code> failed with <code>user_not_found</code>. The actual working form was <code>org members @qa-…</code> / <code>org delete @qa-…</code>, which the help does not indicate.</div>
+    </div>
+  </div>
+
+  <div class="phase">
+    <div class="phase-head">
+      <span class="phase-num">Phase 7</span>
+      <span class="phase-title">Output consistency</span>
+      <div class="phase-chips"><span class="chip p">4 pass</span></div>
+    </div>
+    <div class="phase-body">
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Structured outputs used snake_case field names consistently.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Empty collections rendered as <code>[]</code>, not <code>null</code>.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">Server timestamps used RFC3339 UTC <code>Z</code>; runtime timestamps carried the host offset as documented.</span></div>
+      <div class="test-row"><span class="ico pass">&#10003;</span><span class="test-name">First-start <code>hint</code> shape was consistent across fresh workspaces and absent on subsequent starts in the same workspace.</span></div>
+    </div>
+  </div>
+
+  <div class="phase pass">
+    <div class="phase-head">
+      <span class="phase-num">Phase 8</span>
+      <span class="phase-title">Cleanup</span>
+      <span class="phase-verdict pass">PASS</span>
+    </div>
+    <div class="phase-body">
+      <div class="phase-narrative">All disposable local and server-side artifacts created during the run were removed. Verified by an empty <code>clier list @clier --query qa-20260418094133</code>, <code>resource_not_found</code> for <code>jakeraft/hello-claude</code>, <code>working_copy_missing</code> for the removed forked workspace, and <code>org list</code> no longer containing <code>@qa-20260418094133-org</code>.</div>
+    </div>
+  </div>
+
+  <div class="bottom">
+    <div class="guidance-summary">Error guidance: 6 GOOD · 5 POOR · 0 MISSING</div>
+    <div class="verdict fail">FAIL — 3 issues found</div>
+  </div>
+</div>
+</body>
+</html>
