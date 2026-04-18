@@ -1,0 +1,190 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": "2026-04-15T200930",
+    "started_at": "2026-04-15T11:02:46Z",
+    "finished_at": "2026-04-15T11:09:30Z",
+    "environment": {
+      "os": "Darwin 24.5.0",
+      "clier_version": "0.1.0",
+      "auth_target": "@clier",
+      "disposable_prefix": "qa-20260415200930",
+      "modes_exercised": ["agent", "user"]
+    },
+    "agent": { "kind": "claude", "model": "opus-4-7" }
+  },
+  "taxonomy": {
+    "phases": [
+      { "id": "setup",         "name": "Setup",                "order": 0 },
+      { "id": "agent-surface", "name": "Agent-mode surface",   "order": 1, "stripe": "agent" },
+      { "id": "user-surface",  "name": "User-mode surface",    "order": 2, "stripe": "user" },
+      { "id": "walk",          "name": "Black-box walk",       "order": 3 },
+      { "id": "tutorial",      "name": "Tutorial",             "order": 4 },
+      { "id": "guards",        "name": "Clier-specific guards","order": 5 },
+      { "id": "errors",        "name": "Error & conflict",     "order": 6 },
+      { "id": "consistency",   "name": "Output consistency",   "order": 7 },
+      { "id": "cleanup",       "name": "Cleanup",              "order": 8 }
+    ]
+  },
+  "checks": [
+    { "id": "agent-surface.help-walk", "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "`--help` walks 22 commands",
+      "evidence": { "kind": "command", "command": "parse --help" } },
+    { "id": "agent-surface.run-note-visible", "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "`run note` visible",
+      "evidence": { "kind": "command", "command": "grep note" } },
+    { "id": "agent-surface.hint-on-first-start", "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "hint on first start",
+      "evidence": { "kind": "command", "command": "clier run start" } },
+    { "id": "agent-surface.agent-fields-documented", "phase": "agent-surface", "source": "agent", "status": "pass",
+      "title": "agent-facing fields documented",
+      "rationale": "documented in help",
+      "evidence": { "kind": "observation", "rationale": "agent-consumer section present" } },
+
+    { "id": "user-surface.run-note-hidden", "phase": "user-surface", "source": "script", "status": "pass",
+      "title": "`run note` hidden",
+      "evidence": { "kind": "command", "command": "env -u CLIER_AGENT" } },
+    { "id": "user-surface.agent-only-refuses", "phase": "user-surface", "source": "agent", "status": "pass",
+      "title": "agent-only refuses",
+      "rationale": "exit 1 with clear message",
+      "evidence": { "kind": "observation", "rationale": "agent-only hidden behind refusal" } },
+
+    { "id": "walk.happy-path-json", "phase": "walk", "source": "script", "status": "pass",
+      "title": "happy path JSON",
+      "evidence": { "kind": "command", "command": "walk" } },
+    { "id": "walk.cwd-independence", "phase": "walk", "source": "script", "status": "pass",
+      "title": "cwd independence",
+      "evidence": { "kind": "command", "command": "cd /tmp && clier status" } },
+    { "id": "walk.json-consistent", "phase": "walk", "source": "script", "status": "pass",
+      "title": "`--json` consistent",
+      "evidence": { "kind": "command", "command": "survey --json" } },
+    {
+      "id": "walk.search-timeout",
+      "phase": "walk", "source": "script", "status": "error",
+      "title": "`clier search hello` — test infrastructure error",
+      "error_detail": "테스트 러너가 `clier search` 실행 중 30초 내에 응답을 받지 못함. stderr에는 `dial tcp: i/o timeout`. 이 호스트에서 이번 시간대 네트워크 레이턴시가 높았던 것으로 보이며(같은 타임프레임 ping 유실 확인), CLI 자체의 문제라고 단정할 수 없어 error로 기록. 재실행 큐로 송부 권장.",
+      "evidence": {
+        "kind": "command",
+        "command": "clier search hello",
+        "stderr_excerpt": "dial tcp: i/o timeout after 30s",
+        "duration_ms": 30000
+      }
+    },
+    { "id": "walk.open-dashboard", "phase": "walk", "source": "script", "status": "skip",
+      "title": "dashboard launch",
+      "skip_reason": "agent context — no GUI",
+      "evidence": { "kind": "command", "command": "clier open dashboard" } },
+
+    { "id": "tutorial.phase1-canned", "phase": "tutorial", "source": "script", "status": "pass",
+      "title": "Phase 1 canned tutorial",
+      "evidence": { "kind": "command", "command": "walk 1-10" } },
+    { "id": "tutorial.phase2-iterate", "phase": "tutorial", "source": "script", "status": "pass",
+      "title": "Phase 2 iterate scenario (v1 → v2)",
+      "evidence": { "kind": "command", "command": "iterate" } },
+    { "id": "tutorial.copy-matches-cli", "phase": "tutorial", "source": "agent", "status": "pass",
+      "title": "tutorial copy matches CLI",
+      "rationale": "no drift detected",
+      "evidence": { "kind": "observation", "rationale": "문구와 동작 일치" } },
+    { "id": "tutorial.onboarding-coherent", "phase": "tutorial", "source": "agent", "status": "pass",
+      "title": "onboarding coherent",
+      "rationale": "context carries across steps",
+      "evidence": { "kind": "observation", "rationale": "맥락 유지" } },
+    { "id": "tutorial.run-attach-tty", "phase": "tutorial", "source": "script", "status": "skip",
+      "title": "`clier run attach` — TTY required",
+      "skip_reason": "tmux pane — no fresh TTY",
+      "evidence": { "kind": "command", "command": "clier run attach" } },
+
+    { "id": "guards.double-start-refuse", "phase": "guards", "source": "script", "status": "pass",
+      "title": "Double `run start` refused",
+      "evidence": { "kind": "command", "command": "clier run start (2nd)", "exit_code": 1 } },
+    { "id": "guards.remove-while-alive-refuse", "phase": "guards", "source": "script", "status": "pass",
+      "title": "`remove` alive — refused",
+      "evidence": { "kind": "command", "command": "clier remove (alive)", "exit_code": 1 } },
+    { "id": "guards.remove-dirty-refuse", "phase": "guards", "source": "script", "status": "pass",
+      "title": "`remove` dirty — refused",
+      "evidence": { "kind": "command", "command": "clier remove (dirty)", "exit_code": 1 } },
+    { "id": "guards.workspace-dir-relative-rejected", "phase": "guards", "source": "script", "status": "pass",
+      "title": "`workspace-dir` relative rejected",
+      "evidence": { "kind": "command", "command": "clier config set ... rel", "exit_code": 1 } },
+    { "id": "guards.hint-three-tick", "phase": "guards", "source": "script", "status": "pass",
+      "title": "`hint` three-tick",
+      "evidence": { "kind": "command", "command": "sequence" } },
+
+    { "id": "errors.clone-nonexistent", "phase": "errors", "source": "agent", "status": "pass",
+      "title": "clone nonexistent", "guidance": "good",
+      "rationale": "오타 복구 힌트 포함",
+      "evidence": { "kind": "command", "command": "clier clone ...", "exit_code": 1 } },
+    { "id": "errors.pull-dirty", "phase": "errors", "source": "agent", "status": "pass",
+      "title": "pull dirty", "guidance": "good",
+      "rationale": "양쪽 경로 제시",
+      "evidence": { "kind": "command", "command": "clier pull (dirty)", "exit_code": 1 } },
+    { "id": "errors.run-start-missing-arg", "phase": "errors", "source": "agent", "status": "pass",
+      "title": "run start missing arg", "guidance": "good",
+      "rationale": "usage + 예시",
+      "evidence": { "kind": "command", "command": "clier run start", "exit_code": 2 } },
+    { "id": "errors.clone-over-existing", "phase": "errors", "source": "agent", "status": "pass",
+      "title": "clone over existing dir", "guidance": "poor",
+      "rationale": "다음 액션 부재",
+      "evidence": { "kind": "command", "command": "clier clone (existing)", "exit_code": 1 } },
+
+    { "id": "consistency.field-naming", "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Field naming uniform",
+      "evidence": { "kind": "command", "command": "schema diff" } },
+    { "id": "consistency.empty-arrays", "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Empty `[]`",
+      "evidence": { "kind": "command", "command": "survey" } },
+    { "id": "consistency.rfc3339", "phase": "consistency", "source": "script", "status": "pass",
+      "title": "RFC 3339",
+      "evidence": { "kind": "command", "command": "regex" } },
+    { "id": "consistency.version-coherence", "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Version fields coherent",
+      "evidence": { "kind": "command", "command": "cross-check" } },
+
+    { "id": "cleanup.working-copies", "phase": "cleanup", "source": "script", "status": "pass",
+      "title": "4 working copies removed via `clier remove`",
+      "evidence": { "kind": "command", "command": "clier list (workspace)", "stdout_excerpt": "workspace listing = empty" } },
+    {
+      "id": "cleanup.delete-blocked-by-forks",
+      "phase": "cleanup", "source": "script", "status": "fail",
+      "title": "Server-side delete failed — 2 resources retained",
+      "fail_note": "다음 run에서 prefix 충돌 가능. cleanup 루틴이 의존 그래프를 역순으로 삭제하지 못해 발생 — 자식부터 삭제 후 부모를 삭제하도록 cleanup 알고리즘 수정 필요.",
+      "evidence": {
+        "kind": "command",
+        "command": "clier delete qa-20260415/hello-fork; clier delete qa-20260415/greeting-fork",
+        "exit_code": 1,
+        "stderr_excerpt": "clier delete qa-20260415/hello-fork  → exit 1 \"active forks exist (2)\"\nclier delete qa-20260415/greeting-fork  → exit 1 \"active forks exist (1)\""
+      }
+    }
+  ],
+
+  "notes": [
+    { "phase": null, "kind": "warning", "subhead": "test-infra error",
+      "body": "Phase 3 중 `clier search hello` 호출이 30초 이내 응답 없이 타임아웃. 같은 타임프레임에 호스트 네트워크 레이턴시가 높았던 것으로 확인되어 **CLI 결함 아닌 테스트 인프라 오류**로 간주 (status: error). 재실행 큐 송부 권장." },
+    { "phase": null, "kind": "warning", "subhead": "primary finding",
+      "body": "Phase 8 cleanup에서 `clier delete`가 'active forks exist'로 2개 리소스 제거를 거부함. 부모-자식 의존 그래프를 역순으로 삭제하지 못한 cleanup 루틴 버그. 다음 run에서 prefix 충돌 가능성, **수동 정리 필요**." }
+  ],
+
+  "artifacts": [
+    {
+      "kind": "table", "phase": "setup",
+      "subhead": "Resources created this run",
+      "columns": ["ref", "kind", "purpose"],
+      "rows": [
+        { "ref": "qa-20260415/hello-fork", "kind": "team", "purpose": "iterate scenario" },
+        { "ref": "qa-20260415/greeting-fork", "kind": "instruction", "purpose": "iterate scenario" },
+        { "ref": "qa-20260415/hello-child-a", "kind": "team", "purpose": "fork dependency" },
+        { "ref": "qa-20260415/hello-child-b", "kind": "team", "purpose": "fork dependency" },
+        { "ref": "qa-20260415/greeting-child", "kind": "instruction", "purpose": "fork dependency" }
+      ]
+    },
+    {
+      "kind": "table", "phase": "cleanup",
+      "subhead": "Resources retained on server (manual removal required)",
+      "columns": ["ref", "kind", "reason", "children"],
+      "rows": [
+        { "ref": "qa-20260415/hello-fork", "kind": "team", "reason": "has 2 child forks still referencing it", "children": 2 },
+        { "ref": "qa-20260415/greeting-fork", "kind": "instruction", "reason": "has 1 child fork still referencing it", "children": 1 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,443 @@
+{
+  "schema_version": 2,
+  "run": {
+    "id": "2026-04-18T095435",
+    "started_at": "2026-04-18T00:50:11Z",
+    "finished_at": "2026-04-18T00:54:35Z",
+    "environment": {
+      "os": "Darwin 24.5.0",
+      "clier_version": "0.1.2",
+      "auth_target": "@clier",
+      "disposable_prefix": "qa-20260418095435",
+      "modes_exercised": ["agent", "user"]
+    },
+    "agent": { "kind": "claude", "model": "opus-4-7" }
+  },
+  "taxonomy": {
+    "phases": [
+      { "id": "setup",         "name": "Setup",                "order": 0 },
+      { "id": "agent-surface", "name": "Agent-mode surface",   "order": 1, "stripe": "agent" },
+      { "id": "user-surface",  "name": "User-mode surface",    "order": 2, "stripe": "user" },
+      { "id": "walk",          "name": "Black-box walk",       "order": 3 },
+      { "id": "tutorial",      "name": "Tutorial",             "order": 4 },
+      { "id": "guards",        "name": "Clier-specific guards","order": 5 },
+      { "id": "errors",        "name": "Error & conflict",     "order": 6 },
+      { "id": "consistency",   "name": "Output consistency",   "order": 7 },
+      { "id": "cleanup",       "name": "Cleanup",              "order": 8 }
+    ]
+  },
+  "checks": [
+    {
+      "id": "agent-surface.help-walk",
+      "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "`--help` walks every discovered command with exit 0",
+      "evidence": {
+        "kind": "command",
+        "command": "for cmd in $(parse --help); do clier $cmd --help; done",
+        "exit_code": 0,
+        "stdout_excerpt": "24 commands walked, 0 failures",
+        "duration_ms": 1240
+      }
+    },
+    {
+      "id": "agent-surface.run-note-visible",
+      "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "`run note` is visible in agent mode",
+      "evidence": {
+        "kind": "command",
+        "command": "CLIER_AGENT=true clier run --help | grep -q '^\\s*note'",
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "agent-surface.hint-on-first-start",
+      "phase": "agent-surface", "source": "script", "status": "pass",
+      "title": "First `run start` in a fresh workspace returns `hint` field",
+      "evidence": {
+        "kind": "command",
+        "command": "clier run start @clier/hello-claude | jq -e '.hint | length > 0'",
+        "exit_code": 0,
+        "expectations": [
+          { "kind": "json_path_exists", "path": "$.hint", "pass": true }
+        ]
+      }
+    },
+    {
+      "id": "agent-surface.agent-fields-documented",
+      "phase": "agent-surface", "source": "agent", "status": "pass",
+      "title": "Agent-targeted JSON fields documented in help (`hint`, `run_id`)",
+      "rationale": "Fields appear in `--help` output under 'agent consumer' section; aligns with agent-mode expectations.",
+      "evidence": { "kind": "observation", "rationale": "agent-consumer guidance block lists hint and run_id explicitly" }
+    },
+
+    {
+      "id": "user-surface.run-note-hidden",
+      "phase": "user-surface", "source": "script", "status": "pass",
+      "title": "`run note` is hidden in user mode",
+      "evidence": {
+        "kind": "command",
+        "command": "env -u CLIER_AGENT clier run --help | ! grep -q '^\\s*note'",
+        "exit_code": 0
+      }
+    },
+    {
+      "id": "user-surface.agent-only-helpful-error",
+      "phase": "user-surface", "source": "agent", "status": "pass",
+      "title": "Agent-only command surfaces helpful error in user mode",
+      "guidance": "good",
+      "rationale": "exit 1 + 'available only in agent mode' — 모드 진입 방법까지 안내되지는 않지만 원인 식별은 충분",
+      "evidence": {
+        "kind": "command",
+        "command": "env -u CLIER_AGENT clier run note 'x'",
+        "exit_code": 1,
+        "stderr_excerpt": "available only in agent mode"
+      }
+    },
+
+    {
+      "id": "walk.org-list-role",
+      "phase": "walk", "source": "script", "status": "pass",
+      "title": "`clier org list` returns JSON with `role` per org",
+      "evidence": {
+        "kind": "command",
+        "command": "clier org list --json | jq '.[0].role'",
+        "exit_code": 0,
+        "expectations": [
+          { "kind": "json_path_equals", "path": "$[0].role", "expected": "owner", "pass": true }
+        ]
+      }
+    },
+    {
+      "id": "walk.list-pagination",
+      "phase": "walk", "source": "script", "status": "pass",
+      "title": "`clier list` returns paginated JSON",
+      "evidence": {
+        "kind": "command",
+        "command": "clier list --json",
+        "exit_code": 0,
+        "expectations": [
+          { "kind": "json_path_exists", "path": "$.items", "pass": true },
+          { "kind": "json_path_exists", "path": "$.next_cursor", "pass": true }
+        ]
+      }
+    },
+    {
+      "id": "walk.get-has-spec",
+      "phase": "walk", "source": "script", "status": "pass",
+      "title": "`clier get @clier/qa-checklist` returns spec + latest_version",
+      "evidence": {
+        "kind": "command",
+        "command": "clier get @clier/qa-checklist --json",
+        "exit_code": 0,
+        "expectations": [
+          { "kind": "json_path_equals", "path": "$.latest_version", "expected": 1, "pass": true },
+          { "kind": "json_path_exists", "path": "$.spec.content", "pass": true }
+        ]
+      }
+    },
+    {
+      "id": "walk.cwd-independence",
+      "phase": "walk", "source": "script", "status": "pass",
+      "title": "`clier status` works from unrelated cwd (`/tmp`)",
+      "evidence": { "kind": "command", "command": "cd /tmp && clier status", "exit_code": 0 }
+    },
+    {
+      "id": "walk.hint-copy-actionable",
+      "phase": "walk", "source": "agent", "status": "pass",
+      "title": "Agent-facing `hint` copy is actionable (contains literal command)",
+      "rationale": "hint includes 'clier run tell' with concrete argument example — 에이전트가 바로 복사 실행 가능",
+      "evidence": { "kind": "observation", "rationale": "hint.command field contains a ready-to-run shell snippet" }
+    },
+    {
+      "id": "walk.open-dashboard",
+      "phase": "walk", "source": "script", "status": "skip",
+      "title": "`clier open dashboard` launches browser",
+      "skip_reason": "agent context — no GUI to verify browser launch; exit code + printed URL confirmed",
+      "evidence": { "kind": "command", "command": "clier open dashboard" }
+    },
+
+    {
+      "id": "tutorial.iterate-scenario",
+      "phase": "tutorial", "source": "script", "status": "pass",
+      "title": "Scenario — clone → edit → push → server-side version bump",
+      "evidence": {
+        "kind": "scenario",
+        "precondition": "@clier/greeting-prompt exists at v1, user not yet forked",
+        "expected_outcome": "qa-20260418/greeting-fork latest_version: v1 → v2",
+        "actual_outcome": "qa-20260418/greeting-fork latest_version: v1 → v2",
+        "steps": [
+          {
+            "role": "setup", "label": "Fork upstream instruction to QA user",
+            "command": "clier fork @clier/greeting-prompt qa-20260418/greeting-fork",
+            "exit_code": 0, "duration_ms": 312, "status": "pass",
+            "captured": { "resource_id": "res_01H...", "latest_version": 1 }
+          },
+          {
+            "role": "action", "label": "Clone the fork into workspace",
+            "command": "clier clone qa-20260418/greeting-fork",
+            "exit_code": 0, "duration_ms": 480, "status": "pass"
+          },
+          {
+            "role": "action", "label": "Edit CLAUDE.md — append a sentence",
+            "fs_op": { "kind": "write", "path": "CLAUDE.md", "summary": "+12 bytes" },
+            "duration_ms": 3, "status": "pass"
+          },
+          {
+            "role": "action", "label": "Push — publishes new version",
+            "command": "clier push",
+            "exit_code": 0, "duration_ms": 624, "status": "pass",
+            "stdout_excerpt": "published qa-20260418/greeting-fork@v2 (from @clier/greeting-prompt@v1)"
+          },
+          {
+            "role": "assertion", "label": "Server-side `latest_version` is now 2",
+            "command": "clier get qa-20260418/greeting-fork --json",
+            "exit_code": 0, "duration_ms": 140, "status": "pass",
+            "expectations": [
+              { "kind": "json_path_equals", "path": "$.latest_version", "expected": 2, "actual": 2, "pass": true },
+              { "kind": "json_path_equals", "path": "$.parent.owner", "expected": "@clier", "pass": true },
+              { "kind": "json_path_equals", "path": "$.parent.version", "expected": 1, "pass": true }
+            ]
+          },
+          {
+            "role": "teardown", "label": "Remove working copy",
+            "command": "clier remove qa-20260418/greeting-fork",
+            "exit_code": 0, "duration_ms": 88, "status": "pass"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tutorial.run-attach-tty",
+      "phase": "tutorial", "source": "script", "status": "skip",
+      "title": "Tutorial step: `clier run attach` — interactive TTY required",
+      "skip_reason": "tmux pane — no fresh TTY; refusal ('not a terminal') verified indirectly via `clier run view`",
+      "evidence": { "kind": "command", "command": "clier run attach $run_id" }
+    },
+
+    {
+      "id": "guards.remove-while-alive-refuse",
+      "phase": "guards", "source": "script", "status": "pass",
+      "title": "Scenario — `remove` refuses when a run is alive",
+      "evidence": {
+        "kind": "scenario",
+        "precondition": "clean workspace",
+        "expected_outcome": "remove refused with the alive run-id in stderr",
+        "actual_outcome": "remove refused with 'run_01JA7PQXZR5KMA is alive' in stderr",
+        "steps": [
+          { "role": "setup", "label": "Clone team", "command": "clier clone @clier/hello-claude",
+            "exit_code": 0, "duration_ms": 301, "status": "pass" },
+          { "role": "setup", "label": "Start a run to create alive state",
+            "command": "clier run start @clier/hello-claude",
+            "exit_code": 0, "duration_ms": 412, "status": "pass",
+            "captured": { "run_id": "run_01JA7PQXZR5KMA" } },
+          { "role": "assertion", "label": "Remove is refused and names the alive run-id",
+            "command": "clier remove @clier/hello-claude",
+            "exit_code": 1, "duration_ms": 76, "status": "pass",
+            "stderr_excerpt": "cannot remove: run_01JA7PQXZR5KMA is alive; stop it first",
+            "expectations": [
+              { "kind": "exit_code", "expected": "non-zero", "actual": 1, "pass": true },
+              { "kind": "stderr_contains", "expected": "{captured.run_id}", "pass": true }
+            ] },
+          { "role": "teardown", "label": "Stop run and remove workspace",
+            "command": "clier run stop $run_id && clier remove @clier/hello-claude",
+            "exit_code": 0, "duration_ms": 202, "status": "pass" }
+        ]
+      }
+    },
+    {
+      "id": "guards.double-start-refuse",
+      "phase": "guards", "source": "script", "status": "pass",
+      "title": "Second `run start` in same workspace refused with existing run-id",
+      "evidence": { "kind": "command", "command": "clier run start @clier/hello-claude (2nd time)", "exit_code": 1,
+        "stderr_excerpt": "already running: run_01..." }
+    },
+    {
+      "id": "guards.remove-dirty-refuse",
+      "phase": "guards", "source": "script", "status": "pass",
+      "title": "`remove` with uncommitted changes refused with push/revert guidance",
+      "evidence": { "kind": "command", "command": "clier remove ... (dirty workspace)", "exit_code": 1,
+        "stderr_excerpt": "use clier push to publish or clier pull --force to discard" }
+    },
+    {
+      "id": "guards.workspace-dir-relative-rejected",
+      "phase": "guards", "source": "script", "status": "pass",
+      "title": "`config set workspace-dir relative/path` rejected (must be absolute)",
+      "evidence": { "kind": "command", "command": "clier config set workspace-dir relative/path", "exit_code": 1,
+        "stderr_excerpt": "must be absolute" }
+    },
+    {
+      "id": "guards.hint-three-tick",
+      "phase": "guards", "source": "script", "status": "pass",
+      "title": "`hint` field: present 1st start, absent 2nd, reappears after remove+clone",
+      "evidence": { "kind": "command", "command": "(sequence)", "stdout_excerpt": "3-tick sequence verified" }
+    },
+
+    {
+      "id": "errors.clone-nonexistent",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier clone @clier/does-not-exist`",
+      "guidance": "good",
+      "rationale": "exit 1 + 'not found: @clier/does-not-exist — did you mean @clier/hello-claude?' — 오타 복구 힌트까지 포함",
+      "evidence": { "kind": "command", "command": "clier clone @clier/does-not-exist", "exit_code": 1,
+        "stderr_excerpt": "not found: @clier/does-not-exist — did you mean @clier/hello-claude?" }
+    },
+    {
+      "id": "errors.push-nothing-to-publish",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier push` on unchanged workspace",
+      "guidance": "good",
+      "rationale": "'nothing to publish' + non-zero exit 반환으로 상태 명확히 전달",
+      "evidence": { "kind": "command", "command": "clier push (unchanged)", "exit_code": 1,
+        "stderr_excerpt": "nothing to publish" }
+    },
+    {
+      "id": "errors.pull-dirty",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier pull` on dirty workspace without `--force`",
+      "guidance": "good",
+      "rationale": "'use clier push to publish or clier pull --force to discard' — 양쪽 경로 모두 제시",
+      "evidence": { "kind": "command", "command": "clier pull (dirty)", "exit_code": 1,
+        "stderr_excerpt": "use clier push to publish or clier pull --force to discard" }
+    },
+    {
+      "id": "errors.clone-over-existing",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier clone` over existing workspace directory",
+      "guidance": "poor",
+      "rationale": "'destination already exists'만 전달, `clier remove` 또는 다른 경로 제안 부재",
+      "evidence": { "kind": "command", "command": "clier clone ... (existing dir)", "exit_code": 1,
+        "stderr_excerpt": "destination already exists" }
+    },
+    {
+      "id": "errors.edit-unknown-ref",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier edit --instruction @bogus/nope@1`",
+      "guidance": "good",
+      "rationale": "'unknown ref' + 올바른 형식 샘플 제시",
+      "evidence": { "kind": "command", "command": "clier edit --instruction @bogus/nope@1", "exit_code": 1,
+        "stderr_excerpt": "unknown ref @bogus/nope@1; expected owner/name@version" }
+    },
+    {
+      "id": "errors.run-start-missing-arg",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier run start` without argument",
+      "guidance": "good",
+      "rationale": "usage line + 인용 예시 포함",
+      "evidence": { "kind": "command", "command": "clier run start", "exit_code": 2,
+        "stderr_excerpt": "usage: clier run start <owner>/<name>" }
+    },
+    {
+      "id": "errors.delete-with-forks",
+      "phase": "errors", "source": "agent", "status": "pass",
+      "title": "`clier delete` on resource with active forks",
+      "guidance": "good",
+      "rationale": "'has 2 forks' + fork 리스트 출력으로 후속 액션 명확",
+      "evidence": { "kind": "command", "command": "clier delete @clier/qa-checklist", "exit_code": 1,
+        "stderr_excerpt": "has 2 forks:\n  - @user/qa-checklist-fork@1\n  - @other/qa-checklist-fork@3" }
+    },
+
+    {
+      "id": "consistency.field-naming",
+      "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Field naming uniform across `get` / `list` / `status`",
+      "evidence": { "kind": "command", "command": "diff schemas", "stdout_excerpt": "schema diff = 0" }
+    },
+    {
+      "id": "consistency.empty-arrays",
+      "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Empty collections render as `[]`, never `null`",
+      "evidence": { "kind": "command", "command": "survey 12 endpoints", "stdout_excerpt": "12 endpoints surveyed, all []" }
+    },
+    {
+      "id": "consistency.rfc3339",
+      "phase": "consistency", "source": "script", "status": "pass",
+      "title": "Timestamps use RFC 3339 across all commands",
+      "evidence": { "kind": "command", "command": "regex validation", "stdout_excerpt": "all pass ^\\d{4}-\\d{2}-\\d{2}T...Z$" }
+    },
+    {
+      "id": "consistency.version-coherence",
+      "phase": "consistency", "source": "script", "status": "pass",
+      "title": "`latest_version` agrees between `get` and `versions`",
+      "evidence": { "kind": "command", "command": "cross-check", "stdout_excerpt": "7 resources checked, 0 diff" }
+    },
+    {
+      "id": "consistency.hint-shape",
+      "phase": "consistency", "source": "script", "status": "pass",
+      "title": "`hint` field shape stable where emitted",
+      "evidence": { "kind": "command", "command": "check hint shape", "stdout_excerpt": "always {text, command}" }
+    },
+
+    {
+      "id": "cleanup.working-copies",
+      "phase": "cleanup", "source": "script", "status": "pass",
+      "title": "3 working copies removed via `clier remove`",
+      "evidence": { "kind": "command", "command": "clier list (workspace)", "stdout_excerpt": "workspace listing = empty" }
+    },
+    {
+      "id": "cleanup.server-resources",
+      "phase": "cleanup", "source": "script", "status": "pass",
+      "title": "3 server resources deleted via `clier delete`",
+      "evidence": { "kind": "command", "command": "clier list --owner qa-20260418/*", "stdout_excerpt": "[]" }
+    },
+    {
+      "id": "cleanup.postcheck",
+      "phase": "cleanup", "source": "script", "status": "pass",
+      "title": "Post-cleanup `clier list --owner qa-20260418/*` returns `[]`",
+      "evidence": { "kind": "command", "command": "clier list --owner qa-20260418/*",
+        "expectations": [{ "kind": "json_path_equals", "path": "$.items", "expected": [], "pass": true }] }
+    }
+  ],
+
+  "notes": [
+    {
+      "phase": "setup", "kind": "exploratory",
+      "body": "`clier --help`이 **clone** / **run** / **remove** 세 진입 동선을 명시해 첫 사용자 경로 명확. `clier tutorial`로 즉시 실습 가능하다는 안내가 하단에 있어 진입이 자연스러웠음."
+    },
+    {
+      "phase": "tutorial", "kind": "summary",
+      "body": "Tutorial Phase 1·2 완주. clone→start→tell→stop→remove 흐름이 안내대로 동작했고, Phase 2 fork/edit/push/pull이 기대한 버전 전이를 일으킴."
+    },
+    {
+      "phase": "cleanup", "kind": "summary",
+      "body": "Disposable prefix `qa-20260418095435` 에 속한 working copy 3건 + server resource 3건 전량 제거. 잔여 없음."
+    }
+  ],
+
+  "artifacts": [
+    {
+      "kind": "table",
+      "phase": "setup",
+      "subhead": "Resources created this run",
+      "columns": ["ref", "kind", "purpose"],
+      "rows": [
+        { "ref": "qa-20260418/hello-fork",    "kind": "team",        "purpose": "iterate scenario fork target" },
+        { "ref": "qa-20260418/greeting-fork", "kind": "instruction", "purpose": "edited child of greeting-prompt" },
+        { "ref": "qa-20260418/throwaway",     "kind": "team",        "purpose": "double-start-refuse guard" }
+      ]
+    },
+    {
+      "kind": "table",
+      "phase": "tutorial",
+      "subhead": "Version transitions observed",
+      "columns": ["resource", "before", "after", "trigger"],
+      "rows": [
+        { "resource": "qa-20260418/greeting-fork", "before": "—",  "after": "v1", "trigger": "clier fork @clier/greeting-prompt" },
+        { "resource": "qa-20260418/greeting-fork", "before": "v1", "after": "v2", "trigger": "clier push (CLAUDE.md edited)" },
+        { "resource": "qa-20260418/hello-fork",    "before": "—",  "after": "v1", "trigger": "clier fork @clier/hello-claude" },
+        { "resource": "qa-20260418/hello-fork",    "before": "v1", "after": "v2", "trigger": "clier edit --instruction qa-20260418/greeting-fork@2" }
+      ]
+    },
+    {
+      "kind": "checklist",
+      "phase": "tutorial",
+      "subhead": "Sync paths exercised",
+      "items": [
+        { "label": "clean pull on clean workspace (no-op confirmation)", "status": "pass" },
+        { "label": "dirty pull rejected with revert/force guidance", "status": "pass" },
+        { "label": "forced pull after discard overwrites local", "status": "pass" },
+        { "label": "push after edit bumps server version", "status": "pass" },
+        { "label": "post-publish refresh picks up @v2 on second start", "status": "pass" }
+      ]
+    }
+  ]
+}
