@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
-"""Compose check fragments + agent-produced content into a full report-v2 JSON.
+"""Compose a report-v1 JSON from scripted scenarios and agent findings.
 
-Writes reports/<run-id>.json and updates reports/index.json. Validates the
-output against schema/report-v2.schema.json before writing.
+Writes reports/<run-id>.json, updates reports/index.json, validates against
+schema/report-v1.schema.json.
+
+Section A (exploration) comes from --findings-file <path> and/or
+--exploration-summary "<one narrative paragraph>".
+
+Section B (scenarios) comes from one or more --scenario <path> arguments.
+Each scenario file holds one scenario object (or a JSON array of scenarios).
 
 Typical use:
-
-    ./scripts/scenarios/remove-while-alive-refuse.sh > /tmp/check.json
+    ./scripts/scenarios/skill.create-and-delete.sh > /tmp/s.json
     python3 scripts/lib/compose-report.py \
-        --check /tmp/check.json \
-        --notes-file /tmp/notes.json \
-        --summary "Hello-world pipeline — single scenario"
+        --scenario /tmp/s.json \
+        --findings-file findings.json \
+        --exploration-summary "..." \
+        --summary "hello-world run"
 """
 from __future__ import annotations
 import argparse
@@ -25,25 +31,9 @@ from datetime import datetime, timezone
 from jsonschema import Draft202012Validator
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parent.parent  # scripts/lib/.. /.. → repo root
-SCHEMA_PATH = REPO / "schema" / "report-v2.schema.json"
+REPO = HERE.parent.parent
+SCHEMA_PATH = REPO / "schema" / "report-v1.schema.json"
 REPORTS = REPO / "reports"
-
-# Taxonomy aligned with qa-checklist phases. Present every phase even if
-# the current run exercises only one — the renderer hides empty phases.
-DEFAULT_TAXONOMY = {
-    "phases": [
-        {"id": "setup",         "name": "Setup",                 "order": 0},
-        {"id": "agent-surface", "name": "Agent-mode surface",    "order": 1, "stripe": "agent"},
-        {"id": "user-surface",  "name": "User-mode surface",     "order": 2, "stripe": "user"},
-        {"id": "walk",          "name": "Black-box walk",        "order": 3},
-        {"id": "tutorial",      "name": "Tutorial",              "order": 4},
-        {"id": "guards",        "name": "Clier-specific guards", "order": 5},
-        {"id": "errors",        "name": "Error & conflict",      "order": 6},
-        {"id": "consistency",   "name": "Output consistency",    "order": 7},
-        {"id": "cleanup",       "name": "Cleanup",               "order": 8},
-    ]
-}
 
 
 def detect_clier_version() -> str:
@@ -64,51 +54,37 @@ def iso_utc(ts: float | None = None) -> str:
 
 
 def default_run_id() -> str:
-    # Local time, matches existing report filename style (no separator on time).
     return datetime.now().strftime("%Y-%m-%dT%H%M%S")
 
 
-def load_fragments(paths: list[str]) -> list[dict]:
-    checks: list[dict] = []
-    for p in paths:
-        data = json.loads(pathlib.Path(p).read_text())
-        if isinstance(data, list):
-            checks.extend(data)
-        else:
-            checks.append(data)
-    return checks
+def load_array_or_one(path: str) -> list[dict]:
+    data = json.loads(pathlib.Path(path).read_text())
+    return data if isinstance(data, list) else [data]
 
 
-def derive_counts(checks: list[dict]) -> dict:
-    counts = {"total": len(checks), "pass": 0, "fail": 0, "error": 0, "skip": 0}
-    for c in checks:
-        counts[c["status"]] = counts.get(c["status"], 0) + 1
-    return counts
+def counts(items: list[dict]) -> dict:
+    c = {"total": len(items), "pass": 0, "fail": 0, "skip": 0, "error": 0}
+    for it in items:
+        c[it["status"]] = c.get(it["status"], 0) + 1
+    return c
 
 
-def derive_guidance(checks: list[dict]) -> dict:
-    g = {"good": 0, "poor": 0, "missing": 0}
-    for c in checks:
-        if c.get("guidance"):
-            g[c["guidance"]] = g.get(c["guidance"], 0) + 1
-    return g
-
-
-def verdict(counts: dict) -> str:
-    return "pass" if counts["fail"] == 0 and counts["error"] == 0 else "fail"
+def verdict(c_f: dict, c_s: dict) -> str:
+    return "pass" if (c_f["fail"] == 0 and c_f["error"] == 0
+                      and c_s["fail"] == 0 and c_s["error"] == 0) else "fail"
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="append", default=[],
-                    help="Path to a check-fragment JSON file (repeatable)")
-    ap.add_argument("--notes-file", default=None,
-                    help="Optional JSON file with notes array")
-    ap.add_argument("--artifacts-file", default=None,
-                    help="Optional JSON file with artifacts array")
+    ap.add_argument("--scenario", action="append", default=[],
+                    help="Path to a scenario JSON file (repeatable)")
+    ap.add_argument("--findings-file", default=None,
+                    help="Optional JSON file holding the findings array")
+    ap.add_argument("--exploration-summary", default="",
+                    help="One-paragraph narrative for Section A")
     ap.add_argument("--run-id", default=None)
-    ap.add_argument("--started-at", default=None, help="ISO 8601 UTC")
-    ap.add_argument("--finished-at", default=None, help="ISO 8601 UTC")
+    ap.add_argument("--started-at", default=None)
+    ap.add_argument("--finished-at", default=None)
     ap.add_argument("--clier-version", default=None)
     ap.add_argument("--os", default=None, dest="os_str")
     ap.add_argument("--agent-kind", default="claude", choices=["claude", "codex"])
@@ -121,17 +97,17 @@ def main() -> int:
                     help="One-line summary written into reports/index.json")
     args = ap.parse_args()
 
-    if not args.check:
-        print("compose-report: at least one --check is required", file=sys.stderr)
-        return 2
+    scenarios: list[dict] = []
+    for p in args.scenario:
+        scenarios.extend(load_array_or_one(p))
 
-    checks = load_fragments(args.check)
-    if not checks:
-        print("compose-report: no checks loaded from fragments", file=sys.stderr)
-        return 2
+    findings: list[dict] = []
+    if args.findings_file:
+        findings = load_array_or_one(args.findings_file)
 
-    notes = json.loads(pathlib.Path(args.notes_file).read_text()) if args.notes_file else []
-    artifacts = json.loads(pathlib.Path(args.artifacts_file).read_text()) if args.artifacts_file else []
+    if not scenarios and not findings:
+        print("compose-report: need at least one --scenario or --findings-file", file=sys.stderr)
+        return 2
 
     rid = args.run_id or default_run_id()
     now = time.time()
@@ -146,8 +122,8 @@ def main() -> int:
     if args.agent_model:
         agent["model"] = args.agent_model
 
-    report: dict = {
-        "schema_version": 2,
+    report = {
+        "schema_version": 1,
         "run": {
             "id": rid,
             "started_at": started,
@@ -161,19 +137,18 @@ def main() -> int:
             },
             "agent": agent,
         },
-        "taxonomy": DEFAULT_TAXONOMY,
-        "checks": checks,
+        "exploration": {
+            "summary": args.exploration_summary or "(no exploration narrative)",
+            "findings": findings,
+        },
+        "scenarios": scenarios,
     }
-    if notes:
-        report["notes"] = notes
-    if artifacts:
-        report["artifacts"] = artifacts
 
     # validate
     schema = json.loads(SCHEMA_PATH.read_text())
     errors = list(Draft202012Validator(schema).iter_errors(report))
     if errors:
-        print("compose-report: generated report is INVALID:", file=sys.stderr)
+        print("compose-report: report is INVALID:", file=sys.stderr)
         for e in errors[:10]:
             path = "/".join(str(p) for p in e.absolute_path) or "(root)"
             print(f"  at {path}: {e.message}", file=sys.stderr)
@@ -194,16 +169,15 @@ def main() -> int:
     except Exception:
         idx = []
 
-    counts = derive_counts(checks)
-    guidance = derive_guidance(checks)
+    c_f = counts(findings)
+    c_s = counts(scenarios)
     entry = {
         "id": rid,
-        "schema_version": 2,
+        "schema_version": 1,
         "clier_version": clier_v,
         "summary": args.summary,
-        "verdict": verdict(counts),
-        "counts": counts,
-        "guidance": guidance,
+        "verdict": verdict(c_f, c_s),
+        "counts": {"findings": c_f, "scenarios": c_s},
     }
     idx = [e for e in idx if isinstance(e, dict) and e.get("id") != rid]
     idx.insert(0, entry)

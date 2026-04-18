@@ -1,154 +1,25 @@
 [
   {
-    "id": "2026-04-18T152806",
-    "schema_version": 2,
+    "id": "2026-04-18T155257",
+    "schema_version": 1,
     "clier_version": "dev",
-    "summary": "After rename — scenarios sweep",
-    "verdict": "pass",
-    "counts": {
-      "total": 2,
-      "pass": 2,
-      "fail": 0,
-      "error": 0,
-      "skip": 0
-    },
-    "guidance": {
-      "good": 0,
-      "poor": 0,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-18T150934",
-    "schema_version": 2,
-    "clier_version": "dev",
-    "summary": "Guard sweep — 2 Phase 5 guards via driver",
-    "verdict": "pass",
-    "counts": {
-      "total": 2,
-      "pass": 2,
-      "fail": 0,
-      "error": 0,
-      "skip": 0
-    },
-    "guidance": {
-      "good": 0,
-      "poor": 0,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-18T145700",
-    "schema_version": 2,
-    "clier_version": "dev",
-    "summary": "Hello-world pipeline — remove-while-alive guard via deterministic script",
-    "verdict": "pass",
-    "counts": {
-      "total": 1,
-      "pass": 1,
-      "fail": 0,
-      "error": 0,
-      "skip": 0
-    },
-    "guidance": {
-      "good": 0,
-      "poor": 0,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-18T095435",
-    "schema_version": 2,
-    "clier_version": "0.1.2",
-    "summary": "Clean run — iterate scenario v1→v2 confirmed",
-    "verdict": "pass",
-    "counts": {
-      "total": 34,
-      "pass": 32,
-      "fail": 0,
-      "error": 0,
-      "skip": 2
-    },
-    "guidance": {
-      "good": 7,
-      "poor": 1,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-17T181306",
-    "schema_version": 2,
-    "clier_version": "0.1.2",
-    "summary": "All contracts pass — error-message UX debt surfaced (7 items)",
-    "verdict": "pass",
-    "counts": {
-      "total": 36,
-      "pass": 35,
-      "fail": 0,
-      "error": 0,
-      "skip": 1
-    },
-    "guidance": {
-      "good": 2,
-      "poor": 5,
-      "missing": 2
-    }
-  },
-  {
-    "id": "2026-04-17T151650",
-    "schema_version": 2,
-    "clier_version": "0.1.1",
-    "summary": "Iterate scenario FAIL — push exit 0 but server latest_version stayed v1",
+    "summary": "Hello-world pipeline — skill lifecycle scenario",
     "verdict": "fail",
     "counts": {
-      "total": 31,
-      "pass": 27,
-      "fail": 1,
-      "error": 0,
-      "skip": 3
-    },
-    "guidance": {
-      "good": 3,
-      "poor": 1,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-17T010852",
-    "schema_version": 2,
-    "clier_version": "0.1.1",
-    "summary": "Tutorial drift — Step 11 references removed `clier fork`",
-    "verdict": "fail",
-    "counts": {
-      "total": 29,
-      "pass": 28,
-      "fail": 1,
-      "error": 0,
-      "skip": 0
-    },
-    "guidance": {
-      "good": 4,
-      "poor": 0,
-      "missing": 0
-    }
-  },
-  {
-    "id": "2026-04-15T200930",
-    "schema_version": 2,
-    "clier_version": "0.1.0",
-    "summary": "Cleanup leftovers (2) + network timeout infra error",
-    "verdict": "fail",
-    "counts": {
-      "total": 31,
-      "pass": 27,
-      "fail": 1,
-      "error": 1,
-      "skip": 2
-    },
-    "guidance": {
-      "good": 3,
-      "poor": 1,
-      "missing": 0
+      "findings": {
+        "total": 0,
+        "pass": 0,
+        "fail": 0,
+        "skip": 0,
+        "error": 0
+      },
+      "scenarios": {
+        "total": 1,
+        "pass": 0,
+        "fail": 0,
+        "skip": 0,
+        "error": 1
+      }
     }
   }
 ]

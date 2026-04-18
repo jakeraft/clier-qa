@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Validate a single report-v2 check object piped on stdin.
+"""Validate a single report-v1 scenario or finding fragment from stdin.
 
 Usage:
-    ./scripts/scenarios/<scenario>.sh | python3 scripts/lib/validate-check.py
+    ./scripts/scenarios/<scenario>.sh | python3 scripts/lib/validate-check.py [--kind scenario|finding]
 
-Exits 0 on success, prints VALID to stderr.
-Exits 1 on any validation error, prints details to stderr.
+--kind defaults to "scenario". Prints VALID or lists errors on stderr.
+Exits 0 on success, 1 on validation failure.
 """
 from __future__ import annotations
+import argparse
 import json
 import pathlib
 import sys
@@ -17,10 +18,14 @@ from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 
 HERE = pathlib.Path(__file__).resolve().parent
-SCHEMA_PATH = HERE.parent.parent / "schema" / "report-v2.schema.json"
+SCHEMA_PATH = HERE.parent.parent / "schema" / "report-v1.schema.json"
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--kind", choices=["scenario", "finding"], default="scenario")
+    args = ap.parse_args()
+
     try:
         fragment = json.loads(sys.stdin.read())
     except json.JSONDecodeError as e:
@@ -31,12 +36,12 @@ def main() -> int:
     resource = Resource(contents=schema, specification=DRAFT202012)
     registry = Registry().with_resource(uri=schema["$id"], resource=resource)
 
-    check_ref = {"$ref": f"{schema['$id']}#/$defs/check"}
-    validator = Draft202012Validator(check_ref, registry=registry)
+    ref_schema = {"$ref": f"{schema['$id']}#/$defs/{args.kind}"}
+    validator = Draft202012Validator(ref_schema, registry=registry)
 
     errors = list(validator.iter_errors(fragment))
     if not errors:
-        print("VALID", file=sys.stderr)
+        print(f"VALID ({args.kind})", file=sys.stderr)
         return 0
 
     for err in errors[:10]:
