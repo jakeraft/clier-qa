@@ -1,5 +1,24 @@
 [
   {
+    "id": "2026-04-18T152806",
+    "schema_version": 2,
+    "clier_version": "dev",
+    "summary": "After rename — scenarios sweep",
+    "verdict": "pass",
+    "counts": {
+      "total": 2,
+      "pass": 2,
+      "fail": 0,
+      "error": 0,
+      "skip": 0
+    },
+    "guidance": {
+      "good": 0,
+      "poor": 0,
+      "missing": 0
+    }
+  },
+  {
     "id": "2026-04-18T150934",
     "schema_version": 2,
     "clier_version": "dev",

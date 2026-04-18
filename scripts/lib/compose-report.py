@@ -6,11 +6,11 @@ output against schema/report-v2.schema.json before writing.
 
 Typical use:
 
-    ./scripts/guards/remove-while-alive-refuse.sh > /tmp/check.json
+    ./scripts/scenarios/remove-while-alive-refuse.sh > /tmp/check.json
     python3 scripts/lib/compose-report.py \
         --check /tmp/check.json \
         --notes-file /tmp/notes.json \
-        --summary "Hello-world pipeline — single guard"
+        --summary "Hello-world pipeline — single scenario"
 """
 from __future__ import annotations
 import argparse

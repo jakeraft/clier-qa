@@ -2,7 +2,7 @@
 """Validate a single report-v2 check object piped on stdin.
 
 Usage:
-    ./scripts/guards/<guard>.sh | python3 scripts/lib/validate-check.py
+    ./scripts/scenarios/<scenario>.sh | python3 scripts/lib/validate-check.py
 
 Exits 0 on success, prints VALID to stderr.
 Exits 1 on any validation error, prints details to stderr.
