@@ -1,1 +1,15 @@
-[]
+[
+  {
+    "id": "qa-20260418232811",
+    "clier_version": "dev",
+    "summary": "Passes on core run/push/pull flows; fails on hidden run-note surface, read-after-write consistency, guarded delete, org naming, and version-pinned fork syntax.",
+    "verdict": "fail",
+    "counts": {
+      "total": 12,
+      "pass": 5,
+      "fail": 6,
+      "skip": 1,
+      "error": 0
+    }
+  }
+]

@@ -1,0 +1,401 @@
+{
+  "schema_version": 1,
+  "id": "qa-20260418232811",
+  "started_at": "2026-04-18T14:26:45Z",
+  "finished_at": "2026-04-18T14:38:12.137Z",
+  "os": "Darwin 24.5.0",
+  "clier_version": "dev",
+  "auth_target": "jakeraft",
+  "disposable_prefix": "qa-20260418232811",
+  "agent": {
+    "kind": "codex"
+  },
+  "summary": "Core CLI flows were usable: clone/run/tell/view/stop/remove worked for @clier/hello-claude, local edits were detected and pushed with ref cascades, server-side drift surfaced through status/fetch/pull, and JSON output stayed parseable. The main trust breaks were discoverability and state transparency: `run note` only exists in agent mode, read-after-write consistency lagged by about two seconds on create/fork/delete, `pull` gives a removal-oriented dirty-workspace hint, referenced skills can be deleted while still pinned by teams, org commands require an undocumented @ prefix after creation, and version-pinned `fork` syntax is misparsed.",
+  "findings": [
+    {
+      "id": "setup.environment-reachable",
+      "title": "Version and auth status are reachable from user mode",
+      "status": "pass",
+      "rationale": "`clier --version` and `clier auth status` both succeeded from user mode at the start of the run, so the rest of the QA flow could execute against a live authenticated CLI.",
+      "steps": [
+        {
+          "label": "version",
+          "command": "unset CLIER_AGENT; clier --version",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "clier version dev"
+        },
+        {
+          "label": "auth-status",
+          "command": "unset CLIER_AGENT; clier auth status",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"login\":\"jakeraft\"}"
+        }
+      ]
+    },
+    {
+      "id": "orient.run-note-surface",
+      "title": "`run note` is hidden behind agent mode and undiscoverable from user help",
+      "status": "fail",
+      "rationale": "The work-log protocol told me to use `clier run note`, but user-mode help neither lists it nor accepts it. The same binary shows `note` only when `CLIER_AGENT` is present, so a user starting from `--help` cannot discover the logging flow.",
+      "fail_note": "Command surface changes by environment variable with no discoverable bridge from user mode.",
+      "steps": [
+        {
+          "label": "user-run-help",
+          "command": "unset CLIER_AGENT; clier run --help",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "Available Commands:\n  attach\n  list\n  start\n  stop\n  tell\n  view"
+        },
+        {
+          "label": "user-run-note-help",
+          "command": "unset CLIER_AGENT; clier run note --help",
+          "exit_code": 1,
+          "status": "fail",
+          "stdout_excerpt": "{\"error\":{\"kind\":\"unknown_command\",\"message\":\"unknown command: \"note\"\""
+        },
+        {
+          "label": "agent-run-help",
+          "command": "clier run --help",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "Available Commands:\n  note        Record a progress note\n  tell        Send a message to an agent"
+        },
+        {
+          "label": "agent-run-note",
+          "command": "clier run note <<EOF ... EOF",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"status\":\"posted\",\"agent\":\"@clier/clier-qa-codex\",\"run\":\"20260418T142533-c4d4d9e9\"}"
+        }
+      ],
+      "references": [
+        {
+          "kind": "help_output",
+          "label": "user-mode run help",
+          "excerpt": "Use start to launch agents, tell to send them instructions, and attach to watch them work."
+        },
+        {
+          "kind": "help_output",
+          "label": "agent-mode run help",
+          "excerpt": "Use `tell` to message another agent. Use `note` to record a work log entry."
+        }
+      ]
+    },
+    {
+      "id": "canonical.hello-claude-runtime",
+      "title": "Documented hello-claude run lifecycle works end to end",
+      "status": "pass",
+      "rationale": "The built-in tutorial flow worked in practice: cloning `@clier/hello-claude`, starting a run, sending messages, observing them in `run view`, stopping the run, and removing the working copy all succeeded. `run attach` correctly refused inside an agent and told me to use a real terminal.",
+      "command": "clier run start @clier/hello-claude",
+      "exit_code": 0,
+      "stdout_excerpt": "{\"run_id\":\"20260418T143047-c01acd7f\",\"session\":\"hello-claude-c01acd7f\",\"hint\":\"First start in this workspace...\"}",
+      "steps": [
+        {
+          "label": "clone",
+          "command": "unset CLIER_AGENT; clier clone @clier/hello-claude",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"status\":\"cloned\",\"kind\":\"team\",\"owner\":\"@clier\",\"name\":\"hello-claude\"}"
+        },
+        {
+          "label": "attach-from-agent",
+          "command": "unset CLIER_AGENT; clier run attach 20260418T143047-c01acd7f",
+          "exit_code": 1,
+          "status": "pass",
+          "stdout_excerpt": "{\"error\":{\"kind\":\"not_a_terminal\",\"message\":\"this command needs a real terminal\""
+        },
+        {
+          "label": "tell",
+          "command": "unset CLIER_AGENT; clier run tell --run 20260418T143047-c01acd7f --to @clier/hello-claude \"Have both team members greet each other and report the result.\"",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"status\":\"delivered\",\"from\":\"@clier/clier-qa-codex\",\"to\":\"@clier/hello-claude\""
+        },
+        {
+          "label": "view",
+          "command": "unset CLIER_AGENT; clier run view 20260418T143047-c01acd7f",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"messages\":[{\"from_agent\":\"@clier/clier-qa-codex\"...{\"from_agent\":\"@clier/hello-codex\",\"to_agent\":\"@clier/hello-claude\",\"content\":\"Hi hello-claude! Nice to hear from you.\"}],\"notes\":[{\"agent\":\"@clier/hello-codex\""
+        },
+        {
+          "label": "stop",
+          "command": "unset CLIER_AGENT; clier run stop 20260418T143047-c01acd7f",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"stopped\":\"20260418T143047-c01acd7f\"}"
+        },
+        {
+          "label": "remove",
+          "command": "unset CLIER_AGENT; clier remove @clier/hello-claude",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"status\":\"removed\",\"removed\":\"/Users/jake_kakao/.clier/workspace/@clier.hello-claude\",\"removed_runs\":[\"20260418T143047-c01acd7f\"]}"
+        }
+      ]
+    },
+    {
+      "id": "workspace.push-pull-cycle",
+      "title": "Working-copy edit, push, remote drift, and pull all reconcile visibly",
+      "status": "pass",
+      "rationale": "Editing the materialized `CLAUDE.md` in a cloned disposable team made `status` report one modified instruction, `push` created a new instruction version and cascaded both teams, server-side edits later surfaced as `behind` and `pin_outdated`, and `pull` brought the working copy back to the latest pinned graph.",
+      "command": "clier push jakeraft/qa-20260418232811-team",
+      "exit_code": 0,
+      "stdout_excerpt": "{\"status\":\"pushed\",\"pushed\":[{\"kind\":\"instruction\",\"owner\":\"jakeraft\",\"name\":\"qa-20260418232811-instruction\",\"from\":1,\"to\":2,\"reason\":\"local_edit\"},{\"kind\":\"team\"...}]}",
+      "steps": [
+        {
+          "label": "status-modified",
+          "command": "unset CLIER_AGENT; clier status jakeraft/qa-20260418232811-team",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"local\":\"modified\",\"summary\":{\"modified\":1,\"behind\":0,\"pin_outdated\":0,\"clean\":7}"
+        },
+        {
+          "label": "push",
+          "command": "unset CLIER_AGENT; clier push jakeraft/qa-20260418232811-team",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"pushed\":[{\"kind\":\"instruction\"...\"from\":1,\"to\":2,\"reason\":\"local_edit\"},{\"kind\":\"team\",\"name\":\"qa-20260418232811-child\",\"from\":1,\"to\":2,\"reason\":\"ref_cascade\"},{\"kind\":\"team\",\"name\":\"qa-20260418232811-team\",\"from\":1,\"to\":2,\"reason\":\"ref_cascade\"}]"
+        },
+        {
+          "label": "status-behind-and-pin-outdated",
+          "command": "unset CLIER_AGENT; clier status jakeraft/qa-20260418232811-team",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"summary\":{\"modified\":0,\"behind\":1,\"pin_outdated\":4,\"clean\":3}"
+        },
+        {
+          "label": "pull-updates",
+          "command": "unset CLIER_AGENT; clier pull jakeraft/qa-20260418232811-team",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"resources\":[{\"kind\":\"team\",\"name\":\"qa-20260418232811-child\",\"from\":2,\"to\":3},{\"kind\":\"team\",\"name\":\"qa-20260418232811-team\",\"from\":3,\"to\":4},{\"kind\":\"codex-setting\"...}]"
+        }
+      ]
+    },
+    {
+      "id": "failure.pull-dirty-hint",
+      "title": "Dirty-workspace pull failure suggests the wrong next action",
+      "status": "fail",
+      "rationale": "The CLI correctly refused to pull over local modifications, but the returned hint was copied from remove-path logic rather than pull-path logic.",
+      "command": "unset CLIER_AGENT; clier pull jakeraft/qa-20260418232811-team",
+      "exit_code": 1,
+      "stdout_excerpt": "{\"error\":{\"kind\":\"workspace_dirty\",\"message\":\"working copy has uncommitted changes (jakeraft.qa-20260418232811-team/CLAUDE.md modified)\",\"hint\":\"push or revert before removing\"}}",
+      "fail_note": "The attempted operation was pull, but the hint tells the user what to do before removing."
+    },
+    {
+      "id": "state.read-after-write-consistency",
+      "title": "Successful create, fork, and delete responses are not immediately queryable",
+      "status": "fail",
+      "rationale": "Multiple mutations acknowledged success before the CLI could read them back. The pattern repeated across resource creation, fork, and deletion, so the issue is broader than one endpoint.",
+      "fail_note": "The CLI returns success without any hint that immediate reads may still fail or show stale data for about two seconds.",
+      "steps": [
+        {
+          "label": "child-then-root-create",
+          "command": "unset CLIER_AGENT; clier create team ...child && clier create team ...root",
+          "exit_code": 1,
+          "status": "fail",
+          "stdout_excerpt": "first child create returned version 1; immediate root create failed with {\"error\":{\"kind\":\"resource_not_found\",\"message\":\"resource jakeraft/qa-20260418232811-child does not exist\"}}"
+        },
+        {
+          "label": "root-create-after-wait",
+          "command": "sleep 2; unset CLIER_AGENT; clier create team ...root",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"kind\":\"team\",\"metadata\":{\"name\":\"qa-20260418232811-team\""
+        },
+        {
+          "label": "fork-immediate-read",
+          "command": "unset CLIER_AGENT; clier fork @clier/greeting-prompt; clier get jakeraft/greeting-prompt",
+          "exit_code": 1,
+          "status": "fail",
+          "stdout_excerpt": "fork returned a new instruction object, but immediate get returned {\"error\":{\"kind\":\"resource_not_found\",\"message\":\"resource jakeraft/greeting-prompt does not exist\"}}"
+        },
+        {
+          "label": "fork-read-after-wait",
+          "command": "sleep 2; unset CLIER_AGENT; clier get jakeraft/greeting-prompt",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"kind\":\"instruction\",\"metadata\":{\"name\":\"greeting-prompt\""
+        },
+        {
+          "label": "delete-immediate-list",
+          "command": "unset CLIER_AGENT; clier delete ...; clier list jakeraft --query qa-20260418232811 --limit 20",
+          "exit_code": 0,
+          "status": "fail",
+          "stdout_excerpt": "delete returned {\"deleted\":\"jakeraft/qa-20260418232811-team\"} and peers, but immediate list still returned the same resources"
+        },
+        {
+          "label": "delete-read-after-wait",
+          "command": "sleep 2; unset CLIER_AGENT; clier list jakeraft --query qa-20260418232811 --limit 20",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"items\":[],\"total\":0}"
+        }
+      ]
+    },
+    {
+      "id": "safety.delete-referenced-skill",
+      "title": "Referenced skills can be deleted while teams still pin them",
+      "status": "fail",
+      "rationale": "A disposable root team and child team both pinned `qa-20260418232811-skill`, but `clier delete jakeraft/qa-20260418232811-skill` still returned success instead of blocking the destructive operation or requiring the refs to be removed first.",
+      "command": "unset CLIER_AGENT; clier delete jakeraft/qa-20260418232811-skill",
+      "exit_code": 0,
+      "stdout_excerpt": "{\"deleted\":\"jakeraft/qa-20260418232811-skill\"}",
+      "fail_note": "This allows broken or silently rewritten dependency graphs even though the team graph was still live on the server.",
+      "steps": [
+        {
+          "label": "team-before-delete",
+          "command": "unset CLIER_AGENT; clier get jakeraft/qa-20260418232811-team",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "before deletion, the team pinned child v3 plus instruction v2 and settings; earlier status output showed both root and child tracking the skill"
+        },
+        {
+          "label": "delete-skill",
+          "command": "unset CLIER_AGENT; clier delete jakeraft/qa-20260418232811-skill",
+          "exit_code": 0,
+          "status": "fail",
+          "stdout_excerpt": "{\"deleted\":\"jakeraft/qa-20260418232811-skill\"}"
+        }
+      ]
+    },
+    {
+      "id": "org.name-shape-mismatch",
+      "title": "Org subcommands require an undocumented @ prefix after creation",
+      "status": "fail",
+      "rationale": "`clier org create qa-20260418232811-org` succeeded, but the returned name was `@qa-20260418232811-org`. Follow-up commands with the help-text shape (`<org-name>`) were routed as user lookups until I retried with the `@`-prefixed form.",
+      "fail_note": "The create and members/invite/remove contracts disagree about whether org names are bare names or @-prefixed handles.",
+      "steps": [
+        {
+          "label": "create",
+          "command": "unset CLIER_AGENT; clier org create qa-20260418232811-org",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"name\":\"@qa-20260418232811-org\",\"namespace_access\":0"
+        },
+        {
+          "label": "members-without-at",
+          "command": "unset CLIER_AGENT; clier org members qa-20260418232811-org",
+          "exit_code": 1,
+          "status": "fail",
+          "stdout_excerpt": "{\"error\":{\"kind\":\"user_not_found\",\"message\":\"user \"qa-20260418232811-org\" does not exist\"}}"
+        },
+        {
+          "label": "members-with-at",
+          "command": "unset CLIER_AGENT; clier org members @qa-20260418232811-org",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"items\":[{\"name\":\"jakeraft\",\"role\":0}]}"
+        },
+        {
+          "label": "delete",
+          "command": "unset CLIER_AGENT; clier org delete @qa-20260418232811-org",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"deleted\":\"@qa-20260418232811-org\"}"
+        }
+      ]
+    },
+    {
+      "id": "versioning.fork-version-syntax",
+      "title": "Version-pinned fork syntax is parsed as part of the resource name",
+      "status": "fail",
+      "rationale": "`clier versions @clier/greeting-prompt` showed version 1 exists, but `clier fork @clier/greeting-prompt@1` failed by looking for a resource literally named `greeting-prompt@1` instead of either forking that version or explicitly rejecting the syntax.",
+      "command": "unset CLIER_AGENT; clier fork @clier/greeting-prompt@1",
+      "exit_code": 1,
+      "stdout_excerpt": "{\"error\":{\"kind\":\"resource_not_found\",\"message\":\"resource @clier/greeting-prompt@1 does not exist\",\"subject\":{\"detail\":\"resource @clier/greeting-prompt@1 not found\",\"name\":\"greeting-prompt@1\"}}}",
+      "fail_note": "The error shape hides whether version-pinned forks are unsupported or just misparsed.",
+      "steps": [
+        {
+          "label": "versions",
+          "command": "unset CLIER_AGENT; clier versions @clier/greeting-prompt",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"items\":[{\"version\":1,\"snapshot\":{\"content\":\"# Role...\"}}]}"
+        },
+        {
+          "label": "fork-version",
+          "command": "unset CLIER_AGENT; clier fork @clier/greeting-prompt@1",
+          "exit_code": 1,
+          "status": "fail",
+          "stdout_excerpt": "{\"error\":{\"kind\":\"resource_not_found\"...\"name\":\"greeting-prompt@1\"}}"
+        },
+        {
+          "label": "plain-fork",
+          "command": "unset CLIER_AGENT; clier fork @clier/greeting-prompt",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"kind\":\"instruction\",\"metadata\":{\"name\":\"greeting-prompt\",\"owner_name\":\"jakeraft\""
+        }
+      ]
+    },
+    {
+      "id": "output.parseable-json",
+      "title": "Primary outputs remained machine-parseable",
+      "status": "pass",
+      "rationale": "Across list/get/versions/config/open/run view, stdout stayed JSON with snake_case fields, empty collections were rendered as `[]` rather than `null`, and timestamps used RFC3339 forms (`Z` for server timestamps, local offset for runtime timestamps).",
+      "steps": [
+        {
+          "label": "empty-list",
+          "command": "unset CLIER_AGENT; clier list jakeraft --query qa-20260418232811-nope --limit 5",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"items\":[],\"total\":0}"
+        },
+        {
+          "label": "server-timestamp",
+          "command": "unset CLIER_AGENT; clier get jakeraft/qa-20260418232811-instruction",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"updated_at\":\"2026-04-18T14:30:47.184587Z\""
+        },
+        {
+          "label": "runtime-timestamp",
+          "command": "unset CLIER_AGENT; clier run view 20260418T143047-c01acd7f",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "\"started_at\":\"2026-04-18T23:30:47.162552+09:00\",\"stopped_at\":\"2026-04-18T23:33:52.09118+09:00\""
+        }
+      ]
+    },
+    {
+      "id": "config.dashboard-and-open",
+      "title": "Config get/set/view and dashboard open are usable",
+      "status": "pass",
+      "rationale": "Reading config values worked, setting `dashboard_url` and `workspace_dir` to their existing values succeeded without side effects, and `clier open dashboard` returned a machine-readable open result.",
+      "steps": [
+        {
+          "label": "config-view",
+          "command": "unset CLIER_AGENT; clier config view",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"server_url\":\"http://localhost:8080\",\"dashboard_url\":\"http://localhost:5173\",\"credentials_path\":\"/Users/jake_kakao/.clier/credentials.json\",\"workspace_dir\":\"/Users/jake_kakao/.clier/workspace\"}"
+        },
+        {
+          "label": "config-set-dashboard-url",
+          "command": "unset CLIER_AGENT; clier config set dashboard-url http://localhost:5173",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"server_url\":\"http://localhost:8080\",\"dashboard_url\":\"http://localhost:5173\""
+        },
+        {
+          "label": "open-dashboard",
+          "command": "unset CLIER_AGENT; clier open dashboard",
+          "exit_code": 0,
+          "status": "pass",
+          "stdout_excerpt": "{\"status\":\"opened\",\"url\":\"http://localhost:5173\"}"
+        }
+      ]
+    },
+    {
+      "id": "auth.logout-not-exercised",
+      "title": "Auth logout was not exercised inside the publish run",
+      "status": "skip",
+      "rationale": "The run needed a working authenticated session to create, delete, and finally push the report. `auth login` also immediately started a new GitHub device flow even while `auth status` already showed a valid login.",
+      "skip_reason": "Exercising `clier auth logout` would have intentionally broken the authenticated state required to finish the autonomous run, and recovery would have depended on manual device-flow approval."
+    }
+  ]
+}
