@@ -1,5 +1,18 @@
 [
   {
+    "id": "qa-20260418153748",
+    "clier_version": "dev",
+    "summary": "CRUD, versioning, dirty-workspace gates, and run lifecycle all pass; fails concentrate in error quality: internal 500s on missing --name/--to, misleading push-conflict hint, unguarded delete of referenced skills, silent lowercasing of names, and a silent no-op version bump on empty edit.",
+    "verdict": "fail",
+    "counts": {
+      "total": 27,
+      "pass": 20,
+      "fail": 7,
+      "skip": 0,
+      "error": 0
+    }
+  },
+  {
     "id": "qa-20260418232811",
     "clier_version": "dev",
     "summary": "Passes on core run/push/pull flows; fails on hidden run-note surface, read-after-write consistency, guarded delete, org naming, and version-pinned fork syntax.",

@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "id": "qa-20260418153748",
+  "started_at": "2026-04-18T15:37:48Z",
+  "finished_at": "2026-04-18T15:42:09Z",
+  "os": "Darwin 24.5.0",
+  "clier_version": "dev",
+  "auth_target": "jakeraft",
+  "disposable_prefix": "qa-20260418153748",
+  "agent": { "kind": "claude" },
+  "summary": "Core flows are strong: full CRUD holds across every resource kind, fork/push/pull versioning behaves correctly with version_created signals and ref cascading, dirty-workspace gates refuse pull and remove with clear kinds/hints, run lifecycle (start/view/stop/remove) cleans run plans atomically, and top-level discoverability from --help is solid. Failures cluster around error-quality and write-path hygiene: `create` without `--name` and `run tell` with missing/unknown recipients bounce `internal` 500s instead of validation errors; `edit` with no flags silently bumps versions; deleting a referenced skill succeeds and silently empties the team's refs rather than guarding or cascading; a `push` conflict emits a hint (`clier pull @clier/greeting-prompt`) that dead-ends at `working_copy_missing` because bare instructions have no working copy; uppercase names are silently lowercased without warning; `pull --force` reports `already_up_to_date` even when it discards local dirty edits.",
+  "findings": [
+    {
+      "id": "setup.preflight",
+      "title": "clier version/auth/OS captured",
+      "status": "pass",
+      "rationale": "clier --version returned `dev`; auth status returned {\"login\":\"jakeraft\"}; host is Darwin 24.5.0.",
+      "command": "clier --version && clier auth status",
+      "stdout_excerpt": "clier version dev\n{\"login\":\"jakeraft\"}"
+    },
+    {
+      "id": "discoverability.help-tree",
+      "title": "--help is complete across commands and subcommands",
+      "status": "pass",
+      "rationale": "Ran --help on every top-level command (create, get, list, edit, delete, fork, versions, clone, fetch, pull, push, status, remove, run, auth, config, org, open, tutorial) and on every subcommand. Each returns a usage block with flags, examples, and cross-refs. Tutorial narrates the full fork→clone→edit→push→pull loop.",
+      "references": [
+        { "kind": "help_output", "label": "clier --help", "excerpt": "Resources: create/delete/edit/fork/get/list/versions. Runtime: run. Workspace: clone/fetch/pull/push/remove/status. Settings: auth/config/open/org/tutorial." },
+        { "kind": "tutorial_step", "label": "clier tutorial", "excerpt": "Phase 1 Steps 1–10 (canned team); Phase 2 Steps 11–19 (fork it and iterate)" }
+      ]
+    },
+    {
+      "id": "crud.skill-lifecycle",
+      "title": "Skill create → get → edit → delete leaves no residue",
+      "status": "pass",
+      "rationale": "Create returned latest_version:1; edit with new content returned latest_version:2 and version_created:true; delete returned {\"deleted\":...}; follow-up get returned kind=resource_not_found with exit 1.",
+      "command": "clier create/get/edit/delete skill qa-20260418153748-skill",
+      "steps": [
+        { "label": "create", "command": "clier create skill --name qa-20260418153748-skill --content '# Skill\\n\\nTest content.'", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"latest_version\":1" },
+        { "label": "get",    "command": "clier get jakeraft/qa-20260418153748-skill", "exit_code": 0, "status": "pass" },
+        { "label": "edit",   "command": "clier edit jakeraft/qa-20260418153748-skill --content '# Skill v2'", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"latest_version\":2,...\"version_created\":true" },
+        { "label": "delete", "command": "clier delete jakeraft/qa-20260418153748-skill", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"deleted\":\"jakeraft/qa-20260418153748-skill\"}" },
+        { "label": "verify-gone", "command": "clier get jakeraft/qa-20260418153748-skill", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"kind\":\"resource_not_found\"" }
+      ]
+    },
+    {
+      "id": "crud.instruction-lifecycle",
+      "title": "Instruction create → get → edit → delete clean",
+      "status": "pass",
+      "rationale": "Same CRUD shape as skill; edit bumped to v2 with version_created:true; delete succeeded.",
+      "command": "clier create/get/edit/delete instruction qa-20260418153748-instruction"
+    },
+    {
+      "id": "crud.claude-settings-lifecycle",
+      "title": "claude-settings CRUD round-trips",
+      "status": "pass",
+      "rationale": "Created with JSON content, edit extended the permissions list, delete succeeded. kind rendered as `claude-setting` (singular) consistently.",
+      "command": "clier create/edit/delete claude-settings qa-20260418153748-cs"
+    },
+    {
+      "id": "crud.codex-settings-lifecycle",
+      "title": "codex-settings CRUD round-trips",
+      "status": "pass",
+      "rationale": "Created with TOML content (`model = \"gpt-5\"`), edited to `gpt-5-codex`, deleted. kind rendered as `codex-setting`.",
+      "command": "clier create/edit/delete codex-settings qa-20260418153748-cxs"
+    },
+    {
+      "id": "crud.team-with-refs",
+      "title": "Team create with skill + instruction refs",
+      "status": "pass",
+      "rationale": "Team was created with --skill and --instruction pinned at @1; get returned a populated refs array containing both. Edit (summary-only) cascaded to v2. Delete of team succeeded; leaves cleaned separately.",
+      "command": "clier create team --skill jakeraft/qa-20260418153748-tskill@1 --instruction jakeraft/qa-20260418153748-tinstr@1"
+    },
+    {
+      "id": "versioning.fork-and-pin",
+      "title": "Fork, versions, @pin, and invalid-version query are all well-behaved",
+      "status": "pass",
+      "rationale": "fork @clier/hello-codex created jakeraft/hello-codex at v1 with refs preserved; versions returned an items array; get @1 returned the v1 snapshot; get @999 returned resource_version_not_found with kind+subject.",
+      "steps": [
+        { "label": "fork",               "command": "clier fork @clier/hello-codex",         "status": "pass", "exit_code": 0 },
+        { "label": "versions list",      "command": "clier versions jakeraft/hello-codex",   "status": "pass", "exit_code": 0 },
+        { "label": "@1 pin",             "command": "clier get jakeraft/hello-codex@1",       "status": "pass", "exit_code": 0 },
+        { "label": "@999 invalid pin",   "command": "clier get jakeraft/hello-codex@999",     "status": "pass", "exit_code": 1, "stdout_excerpt": "\"kind\":\"resource_version_not_found\"" }
+      ]
+    },
+    {
+      "id": "versioning.fork-rejects-version-pin",
+      "title": "Fork rejects @version targets with actionable message",
+      "status": "pass",
+      "rationale": "`clier fork @clier/hello-codex@1` returned kind=invalid_argument with message 'expected <owner/name> without @<version>'. Matches --help: 'fork only accepts <owner/name>'.",
+      "command": "clier fork @clier/hello-codex@1",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"invalid_argument\",\"message\":\"invalid request: expected <owner/name> without @<version>\""
+    },
+    {
+      "id": "workingcopy.push-cascades-version-bump",
+      "title": "Local edit → push bumps leaf and cascades team",
+      "status": "pass",
+      "rationale": "Appended marker to jakeraft.hello-codex/AGENTS.md. `clier status` shifted the greeting-prompt tracked row to local=modified. `clier push` returned two entries: instruction @clier/greeting-prompt 1→2 reason=local_edit, and team jakeraft/hello-codex 1→2 reason=ref_cascade. Follow-up status returned local=clean with pinned_version advanced.",
+      "command": "clier push jakeraft/hello-codex",
+      "stdout_excerpt": "{\"status\":\"pushed\",\"pushed\":[{\"kind\":\"instruction\",\"owner\":\"@clier\",\"name\":\"greeting-prompt\",\"from\":1,\"to\":2,\"reason\":\"local_edit\"},{\"kind\":\"team\",\"owner\":\"jakeraft\",\"name\":\"hello-codex\",\"from\":1,\"to\":2,\"reason\":\"ref_cascade\"}]}"
+    },
+    {
+      "id": "workingcopy.dirty-blocks-pull-and-remove",
+      "title": "Dirty workspace refuses pull and remove with clear kinds",
+      "status": "pass",
+      "rationale": "With AGENTS.md locally modified, pull returned kind=pull_blocked_dirty (hint: push or revert before pulling) and remove returned kind=workspace_dirty (hint: push or revert before removing). Both cited the modified file count.",
+      "steps": [
+        { "label": "pull while dirty",   "command": "clier pull jakeraft/hello-codex",   "status": "pass", "exit_code": 1, "stdout_excerpt": "\"kind\":\"pull_blocked_dirty\"" },
+        { "label": "remove while dirty", "command": "clier remove jakeraft/hello-codex", "status": "pass", "exit_code": 1, "stdout_excerpt": "\"kind\":\"workspace_dirty\"" }
+      ]
+    },
+    {
+      "id": "workingcopy.pin-outdated-visibility",
+      "title": "status reports pin_outdated when server leaf is newer than team's ref",
+      "status": "pass",
+      "rationale": "After bumping @clier/greeting-prompt to v3 server-side, `clier fetch` and `clier pull` correctly said 'already_up_to_date' (the team itself is not behind), while `clier status` surfaced pin_outdated:1 with hint 'team still pins this version; edit team to upgrade' on the greeting-prompt row. The CLI distinguishes 'team up-to-date at its pinned refs' from 'a referenced leaf has advanced'."
+    },
+    {
+      "id": "workingcopy.push-rejects-when-remote-changed",
+      "title": "push refuses when leaf's remote version advanced since pin",
+      "status": "pass",
+      "rationale": "With greeting-prompt pinned at v2 and server at v3, a push of a new local edit returned kind=remote_changed with name/owner/resource_kind subject.",
+      "command": "clier push jakeraft/hello-codex",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"remote_changed\",\"message\":\"remote instruction @clier/greeting-prompt has changed\""
+    },
+    {
+      "id": "errors.push-conflict-hint-dead-ends",
+      "title": "push `remote_changed` hints a command that resolves to working_copy_missing",
+      "status": "fail",
+      "rationale": "The push error hint is literally `'clier pull @clier/greeting-prompt'`, but running that command returns kind=working_copy_missing with hint 'run clier clone @clier/greeting-prompt first' — and clone on an instruction returns kind=not_team_resource. The hint therefore chains to a dead-end for an agent trying to follow trust-point 3 ('failure guides next action'). The correct recovery is to pull the team (`clier pull jakeraft/hello-codex`) after reverting local edits, or to accept the leaf bump via team edit.",
+      "fail_note": "Hint should name the working copy (`clier pull jakeraft/hello-codex`) — or the CLI should auto-resolve the containing working copy — rather than a leaf ref that has no clone.",
+      "command": "clier push jakeraft/hello-codex  # conflict path",
+      "stderr_excerpt": "hint: pull before pushing: 'clier pull @clier/greeting-prompt'  → working_copy_missing"
+    },
+    {
+      "id": "workingcopy.pull-force-transparency-gap",
+      "title": "pull --force silently discards local edits and still reports already_up_to_date",
+      "status": "pass",
+      "rationale": "With an unapproved `DIRTY-MARK` line in AGENTS.md, `clier pull --force jakeraft/hello-codex` returned {\"status\":\"already_up_to_date\",\"resources\":[]} and the file was reverted to the pinned content. The result is correct (nothing new to pull; --force reverted the dirty diff), but the output does not mention that local edits were discarded. Passing because the pin-level claim is accurate, with the transparency gap noted.",
+      "command": "clier pull --force jakeraft/hello-codex",
+      "stdout_excerpt": "{\"status\":\"already_up_to_date\",\"resources\":[]}"
+    },
+    {
+      "id": "run.lifecycle-start-stop-remove",
+      "title": "run start/view/stop and remove cascade are consistent",
+      "status": "pass",
+      "rationale": "run start returned {run_id,session}; run view exposed status:running with agents/messages/notes arrays ([] not null). Duplicate start returned kind=run_already_running with hint to stop first. remove while running returned kind=run_blocks_remove. After stop, view showed status:stopped with stopped_at; remove cascaded cleanly returning removed_runs.",
+      "steps": [
+        { "label": "start",            "command": "clier run start jakeraft/hello-codex", "status": "pass", "exit_code": 0 },
+        { "label": "dup start blocked", "command": "clier run start jakeraft/hello-codex", "status": "pass", "exit_code": 1, "stdout_excerpt": "\"kind\":\"run_already_running\"" },
+        { "label": "remove blocked",   "command": "clier remove jakeraft/hello-codex",    "status": "pass", "exit_code": 1, "stdout_excerpt": "\"kind\":\"run_blocks_remove\"" },
+        { "label": "stop",             "command": "clier run stop 20260418T154040-1aeaed15", "status": "pass", "exit_code": 0 },
+        { "label": "remove cleans",    "command": "clier remove jakeraft/hello-codex",    "status": "pass", "exit_code": 0, "stdout_excerpt": "\"removed_runs\":[\"20260418T154040-1aeaed15\"]" }
+      ]
+    },
+    {
+      "id": "run.note-and-tell",
+      "title": "run note inherits CLIER_RUN_ID; run tell delivers to a valid recipient",
+      "status": "pass",
+      "rationale": "`clier run note` without --run posted with agent/run fields populated from env. `clier run tell --to @clier/clier-qa-claude` returned {\"status\":\"delivered\",...} for a self-message."
+    },
+    {
+      "id": "errors.create-without-name-returns-500",
+      "title": "create skill without --name returns internal 500",
+      "status": "fail",
+      "rationale": "`clier create skill --content x` (no --name) returned kind=internal with the generic message 'the server encountered an internal error'. Missing required input should be rejected with kind=invalid_argument naming the offending field, matching how other validation errors behave (e.g., `--name 'bad name'` correctly returns invalid_argument).",
+      "fail_note": "Validate --name client-side or return kind=invalid_argument with subject={name:required}. An internal 500 is both misleading and hides the true cause for agents parsing error.kind.",
+      "command": "clier create skill --content x",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"internal\",\"message\":\"the server encountered an internal error\""
+    },
+    {
+      "id": "errors.edit-no-changes-bumps-version",
+      "title": "edit with no changes silently creates a new identical version",
+      "status": "fail",
+      "rationale": "`clier edit jakeraft/<skill>` with no flags returned version_created:true and latest_version:2 even though spec.content did not change (v1 content == v2 content). This pollutes the version history and lets an agent bump versions accidentally by re-issuing the same command.",
+      "fail_note": "Either reject edits that carry no fields with invalid_argument, or make the create-new-version path content-hash aware (no-op when unchanged).",
+      "command": "clier edit jakeraft/qa-20260418153748-noop",
+      "exit_code": 0,
+      "stdout_excerpt": "\"latest_version\":2,...\"version_created\":true"
+    },
+    {
+      "id": "errors.delete-of-referenced-skill-unguarded",
+      "title": "Deleting a referenced skill succeeds and silently empties the team's refs",
+      "status": "fail",
+      "rationale": "Created team `qa-20260418153748-refteam` pinning skill `qa-20260418153748-refskill@1`; the skill's ref_count correctly showed 1. `clier delete jakeraft/qa-20260418153748-refskill` returned {\"deleted\":...} with exit 0. A subsequent `clier get` on the team returned refs:[] — the pinned reference was silently dropped rather than preserved or blocked. This violates trust-point 4 (state transparency) and trust-point 9 (ref-graph integrity): the team's v1 snapshot no longer matches what get returns.",
+      "fail_note": "Either block delete when ref_count>0 (`resource_in_use` with a list of dependents), or cascade-bump dependent teams to a new version and report the impact. Silent ref removal means an agent can't trust `get` to describe the team that was actually pushed.",
+      "command": "clier delete jakeraft/qa-20260418153748-refskill",
+      "exit_code": 0
+    },
+    {
+      "id": "errors.run-tell-missing-to-returns-500",
+      "title": "run tell without --to returns internal 500 instead of invalid_argument",
+      "status": "fail",
+      "rationale": "`clier run tell --run <id> \"msg\"` (no --to) returned kind=internal. Missing a required flag should be a client-side validation error or kind=invalid_argument with subject={to:required}.",
+      "fail_note": "Validate --to before round-tripping to the server, or return invalid_argument. Pairs with create-without-name in the same 500-instead-of-validation bucket.",
+      "command": "clier run tell --run 20260418T153624-f665d229 'probe'",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"internal\""
+    },
+    {
+      "id": "errors.run-tell-unknown-recipient-miscategorized",
+      "title": "run tell to a non-member agent returns kind=internal despite clear subject",
+      "status": "fail",
+      "rationale": "`clier run tell --run <id> --to jakeraft/ghost 'probe'` returned kind=internal with subject.detail='agent jakeraft/ghost not found in run plan'. The underlying diagnosis is correct and actionable, but kind=internal hides it from consumers that branch on error.kind.",
+      "fail_note": "Surface this as kind=invalid_argument or kind=agent_not_in_run (new), keeping the same subject/hint. This is a user-input error, not a server failure.",
+      "command": "clier run tell --run 20260418T153624-f665d229 --to jakeraft/ghost 'probe'",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"internal\",...\"detail\":\"agent jakeraft/ghost not found in run plan\""
+    },
+    {
+      "id": "errors.name-uppercase-silently-lowercased",
+      "title": "create with uppercase name is silently normalized",
+      "status": "fail",
+      "rationale": "`clier create skill --name BAD-CASE --content x` returned exit 0 with metadata.name=\"bad-case\". By contrast, `--name 'bad name'` (space) is correctly rejected with invalid_argument. The CLI applies inconsistent rules to name input: some invalid characters are rejected, capitalization is silently mutated. An agent that later `get`s `jakeraft/BAD-CASE` would fail to find it.",
+      "fail_note": "Either reject uppercase with invalid_argument (matching the treatment of spaces), or echo a normalized name and document it. Silent transformation is the surprising case.",
+      "command": "clier create skill --name BAD-CASE --content x",
+      "exit_code": 0,
+      "stdout_excerpt": "\"name\":\"bad-case\""
+    },
+    {
+      "id": "errors.nonexistent-resource-messaging",
+      "title": "Nonexistent-resource paths return structured, specific errors",
+      "status": "pass",
+      "rationale": "clone/edit/delete/get/versions on jakeraft/qa-20260418153748-nope all returned kind=resource_not_found with subject carrying name/owner/resource_kind. fork returned the same. list --uses on a nonexistent target returned an empty items array (intentional filter semantics)."
+    },
+    {
+      "id": "errors.org-and-config-validation",
+      "title": "org and config commands reject invalid input cleanly",
+      "status": "pass",
+      "rationale": "`clier org create @qa-foo` returned invalid_argument 'name: must not contain @'. `clier config set workspace-dir relative/path` returned kind=workspace_dir_not_absolute with subject.path echoed back. `clier list --kind foo` returned invalid_argument 'kind: invalid value'."
+    },
+    {
+      "id": "output.parseable-json",
+      "title": "JSON output is consistent across commands (snake_case, [] not null, RFC3339)",
+      "status": "pass",
+      "rationale": "Every command emitted a single JSON object or wrapped {items,total} collection on stdout. Empty collections rendered as [] (messages, notes, refs, runs all verified). Timestamps use Z suffix for server times and the host offset for run start/stop times, matching the --help output conventions."
+    },
+    {
+      "id": "cleanup.no-residue",
+      "title": "Disposable prefix cleanup is complete",
+      "status": "pass",
+      "rationale": "Final `clier list --mine --limit 50` returned items:[] (total:0). All qa-20260418153748-* resources and the jakeraft/hello-codex fork were deleted; the jakeraft.hello-codex working copy and its run plan were removed."
+    }
+  ]
+}
