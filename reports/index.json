@@ -1,5 +1,18 @@
 [
   {
+    "id": "qa-20260420005852",
+    "clier_version": "dev",
+    "summary": "CRUD, team composition, fork/clone/push/pull, ref graph, versioning, and run-lifecycle guards all pass with strong JSON error structure; fails isolated to push silently dropping skill summary, pull --force silently reverting without report, and an edit-ref hint that contradicts the flag's actual acceptance rule.",
+    "verdict": "fail",
+    "counts": {
+      "total": 24,
+      "pass": 21,
+      "fail": 3,
+      "skip": 0,
+      "error": 0
+    }
+  },
+  {
     "id": "qa-20260418153748",
     "clier_version": "dev",
     "summary": "CRUD, versioning, dirty-workspace gates, and run lifecycle all pass; fails concentrate in error quality: internal 500s on missing --name/--to, misleading push-conflict hint, unguarded delete of referenced skills, silent lowercasing of names, and a silent no-op version bump on empty edit.",

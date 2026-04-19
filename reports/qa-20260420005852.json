@@ -1,0 +1,261 @@
+{
+  "schema_version": 1,
+  "id": "qa-20260420005852",
+  "started_at": "2026-04-19T15:58:51Z",
+  "finished_at": "2026-04-19T16:03:31Z",
+  "os": "Darwin 24.5.0",
+  "clier_version": "dev",
+  "auth_target": "jakeraft",
+  "disposable_prefix": "qa-20260420005852",
+  "agent": {
+    "kind": "claude"
+  },
+  "summary": "End-to-end CRUD for every leaf kind, team composition, the fork/clone/push/pull/fetch/status lifecycle, ref-graph queries, versioning pins, and run-lifecycle guards all worked as advertised, with strong JSON error structure (kind/message/subject/hint) and actionable next-step hints on the majority of deliberate failures — `run start` duplicate, dirty-workspace remove, referenced-resource delete, missing run/agent, and malformed arg all guide the next command. Three defects emerged: `push` of a locally edited skill silently erases the resource's summary in the new version (no file-backed place to store it, no warning), `pull --force` silently discards local modifications while reporting `already_up_to_date` with an empty `resources` array (no evidence the overwrite happened), and the error hint returned when editing a team with `--instruction owner/name` without `@version` advertises `<owner/name>` as a valid form even though that flag refuses bare refs — the hint contradicts the CLI's own acceptance rule.",
+  "findings": [
+    {
+      "id": "setup.environment-reachable",
+      "title": "Version and auth reachable; workspace clean",
+      "status": "pass",
+      "rationale": "`clier --version` returned `clier version dev`, `clier auth status` returned `{\"login\":\"jakeraft\"}`, and the disposable prefix was committed before any mutating probes.",
+      "steps": [
+        { "label": "version", "command": "clier --version", "exit_code": 0, "status": "pass", "stdout_excerpt": "clier version dev" },
+        { "label": "auth-status", "command": "clier auth status", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"login\":\"jakeraft\"}" },
+        { "label": "auth-token", "command": "clier auth token", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"token\":\"clier_..." }
+      ]
+    },
+    {
+      "id": "orient.top-help-discoverability",
+      "title": "`clier --help` orients from nothing",
+      "status": "pass",
+      "rationale": "Top-level help groups commands by Resources/Runtime/Workspace/Settings and names the canonical first step (`clier tutorial`). Every top-level command has `--help`, and every subcommand of `create`, `run`, `config`, `auth`, `open`, `org` documents its flags.",
+      "command": "clier --help",
+      "references": [
+        { "kind": "help_output", "label": "top-level groups", "excerpt": "Resources / Runtime / Workspace / Settings groupings with `clier tutorial` called out as the onboarding entry point." }
+      ]
+    },
+    {
+      "id": "crud.skill-lifecycle",
+      "title": "Skill create → get → edit (summary) → edit (content) → versions",
+      "status": "pass",
+      "rationale": "Three edits produced versions 1→3 with correct snapshot diffs (summary-only edit kept content stable, content edit bumped both). `versions` returned the full history as an array of snapshots with RFC3339 timestamps.",
+      "command": "clier edit jakeraft/qa-20260420005852-skill --content \"Skill content v2\"",
+      "exit_code": 0,
+      "stdout_excerpt": "\"latest_version\":3,...\"content\":\"Skill content v2\",...\"version_created\":true",
+      "steps": [
+        { "label": "create", "command": "clier create skill --name qa-20260420005852-skill ...", "exit_code": 0, "status": "pass" },
+        { "label": "get", "command": "clier get jakeraft/qa-20260420005852-skill", "exit_code": 0, "status": "pass" },
+        { "label": "edit-summary-only", "command": "clier edit jakeraft/qa-20260420005852-skill --summary ...", "exit_code": 0, "status": "pass", "stdout_excerpt": "latest_version:2, content:\"Skill content v1\"" },
+        { "label": "edit-content", "command": "clier edit jakeraft/qa-20260420005852-skill --content ...", "exit_code": 0, "status": "pass", "stdout_excerpt": "latest_version:3, content:\"Skill content v2\"" },
+        { "label": "versions", "command": "clier versions jakeraft/qa-20260420005852-skill", "exit_code": 0, "status": "pass", "stdout_excerpt": "3 items: v1, v2, v3 with snapshots" }
+      ]
+    },
+    {
+      "id": "crud.instruction-lifecycle",
+      "title": "Instruction create → get@1 → edit → versions",
+      "status": "pass",
+      "rationale": "Created at v1, edited to v2, and `get <owner/name>@1` returned the historical snapshot not the latest — version pinning is honored on reads.",
+      "steps": [
+        { "label": "create", "command": "clier create instruction --name qa-20260420005852-instr ...", "exit_code": 0, "status": "pass" },
+        { "label": "get-pinned", "command": "clier get jakeraft/qa-20260420005852-instr@1", "exit_code": 0, "status": "pass", "stdout_excerpt": "version:1,snapshot.content:\"# Role\\\\nqa probe instruction\"" },
+        { "label": "edit", "command": "clier edit jakeraft/qa-20260420005852-instr --content \"# Role updated\"", "exit_code": 0, "status": "pass", "stdout_excerpt": "latest_version:2" }
+      ]
+    },
+    {
+      "id": "crud.settings-lifecycle",
+      "title": "claude-settings and codex-settings create + get",
+      "status": "pass",
+      "rationale": "Both settings kinds accept `--content` (JSON for claude, TOML for codex), return kinds `claude-setting` / `codex-setting`, and are queryable by owner/name immediately.",
+      "steps": [
+        { "label": "claude-settings-create", "command": "clier create claude-settings --name qa-20260420005852-claude ...", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"kind\":\"claude-setting\",...\"content\":\"{\\\"model\\\":\\\"opus\\\"}\"" },
+        { "label": "codex-settings-create", "command": "clier create codex-settings --name qa-20260420005852-codex ...", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"kind\":\"codex-setting\",...\"content\":\"model = \\\"gpt-5.4\\\"\"" }
+      ]
+    },
+    {
+      "id": "crud.team-composition",
+      "title": "Team create with skill + instruction + claude-settings + child",
+      "status": "pass",
+      "rationale": "`clier create team` accepted every ref flag; `get` returned `refs[]` listing every dependency with rel_type, target_version, and owner. `edit --command` then produced a new version with refs preserved.",
+      "command": "clier create team --name qa-20260420005852-parent --skill jakeraft/qa-20260420005852-skill@3 --instruction jakeraft/qa-20260420005852-instr@2 --claude-settings jakeraft/qa-20260420005852-claude@1 --child jakeraft/qa-20260420005852-child@1 --command \"claude --help\"",
+      "exit_code": 0,
+      "steps": [
+        { "label": "create-child-team", "command": "clier create team --name qa-20260420005852-child --codex-settings jakeraft/qa-20260420005852-codex@1 --command \"codex --help\"", "exit_code": 0, "status": "pass" },
+        { "label": "create-parent-team", "command": "clier create team --name qa-20260420005852-parent ...", "exit_code": 0, "status": "pass", "stdout_excerpt": "refs[]: skill(v3), instruction(v2), claude-setting(v1), child(v1)" },
+        { "label": "edit-command", "command": "clier edit jakeraft/qa-20260420005852-parent --command \"claude --version\"", "exit_code": 0, "status": "pass", "stdout_excerpt": "latest_version:2, version_created:true" }
+      ]
+    },
+    {
+      "id": "ref-graph.uses-query",
+      "title": "`list --uses` returns dependents of a resource",
+      "status": "pass",
+      "rationale": "`clier list --uses jakeraft/qa-20260420005852-skill` returned the parent team as the sole dependent with `total:1`, matching the team's declared ref.",
+      "command": "clier list --uses jakeraft/qa-20260420005852-skill",
+      "exit_code": 0,
+      "stdout_excerpt": "items[0].name=qa-20260420005852-parent, total=1"
+    },
+    {
+      "id": "workspace.clone-state-layout",
+      "title": "Clone materializes canonical workspace layout",
+      "status": "pass",
+      "rationale": "`clier clone jakeraft/qa-20260420005852-parent` created `<workspace>/jakeraft.qa-20260420005852-parent/` with nested working copies for parent + child under distinct `jakeraft.<name>/` folders; `.clier/state.json` tracks pinned versions. `status` listed 6 tracked resources all `clean`.",
+      "command": "clier clone jakeraft/qa-20260420005852-parent",
+      "exit_code": 0,
+      "stdout_excerpt": "\"status\":\"cloned\",\"dir\":\"/Users/jake_kakao/.clier/workspace/jakeraft.qa-20260420005852-parent\",\"version\":2"
+    },
+    {
+      "id": "workspace.push-cascades-version",
+      "title": "Local skill edit pushes as new version with team ref cascade",
+      "status": "pass",
+      "rationale": "Overwriting the skill's `SKILL.md` with new content and running `push` produced `skill v3→v4 (reason: local_edit)` and `team v2→v3 (reason: ref_cascade)`, and `status` returned to `clean` with updated pins.",
+      "command": "clier push jakeraft/qa-20260420005852-parent",
+      "exit_code": 0,
+      "stdout_excerpt": "\"pushed\":[{\"kind\":\"skill\",\"from\":3,\"to\":4,\"reason\":\"local_edit\"},{\"kind\":\"team\",\"from\":2,\"to\":3,\"reason\":\"ref_cascade\"}]"
+    },
+    {
+      "id": "workspace.push-drops-skill-summary",
+      "title": "`push` silently erases the skill summary on the new version",
+      "status": "fail",
+      "rationale": "Before push, `jakeraft/qa-20260420005852-skill` was at v3 with `summary:\"qa test skill updated\"`. After a content-only local edit and `push`, v4's snapshot is `summary:\"\"`. The working copy has no file surface for skill summary, so push reconstructs the resource from the content file alone, wiping metadata that was never local. No warning is emitted and no flag controls this.",
+      "fail_note": "Push drops non-file resource metadata (summary) with no warning; round-tripping a cloned skill through edit+push is lossy on any field that isn't materialized in the working copy. Either preserve fields that have no local surface, or surface what will be overwritten before pushing.",
+      "command": "clier push jakeraft/qa-20260420005852-parent (after editing SKILL.md)",
+      "exit_code": 0,
+      "steps": [
+        { "label": "before-push", "command": "clier versions jakeraft/qa-20260420005852-skill", "exit_code": 0, "status": "pass", "stdout_excerpt": "v3 snapshot.summary=\"qa test skill updated\"" },
+        { "label": "push", "command": "clier push jakeraft/qa-20260420005852-parent", "exit_code": 0, "status": "pass", "stdout_excerpt": "skill v3->v4 reason=local_edit" },
+        { "label": "after-push", "command": "clier versions jakeraft/qa-20260420005852-skill", "exit_code": 0, "status": "fail", "stdout_excerpt": "v4 snapshot.summary=\"\"" }
+      ]
+    },
+    {
+      "id": "workspace.status-surfaces-pin-outdated",
+      "title": "Server-side leaf edit surfaces as `pin_outdated` with actionable hint",
+      "status": "pass",
+      "rationale": "After `clier edit` bumped the skill to v5 on the server, workspace `status` reported the tracked skill as `local:clean, pinned_version:4, latest_version:5, remote:\"pin_outdated\", hint:\"team still pins this version; edit team to upgrade\"` — the hint names the exact next command, and `summary.pin_outdated` is tallied.",
+      "command": "clier status jakeraft/qa-20260420005852-parent",
+      "exit_code": 0,
+      "stdout_excerpt": "\"remote\":\"pin_outdated\",\"hint\":\"team still pins this version; edit team to upgrade\""
+    },
+    {
+      "id": "workspace.fetch-noop-is-parseable",
+      "title": "`fetch` is a read-only, idempotent JSON preview",
+      "status": "pass",
+      "rationale": "`fetch` on an up-to-date team returned `{\"status\":\"already_up_to_date\",\"resources\":[]}` — empty collection is `[]` not `null`, matching the CLI's output convention.",
+      "command": "clier fetch jakeraft/qa-20260420005852-parent",
+      "exit_code": 0,
+      "stdout_excerpt": "\"status\":\"already_up_to_date\",\"resources\":[]"
+    },
+    {
+      "id": "workspace.pull-force-silent-overwrite",
+      "title": "`pull --force` silently reverts local edits and reports no-op",
+      "status": "fail",
+      "rationale": "With the skill file dirty (`local:\"modified\"` per `status`), running `clier pull jakeraft/qa-20260420005852-parent --force` overwrote the file back to the pinned snapshot but returned `{\"status\":\"already_up_to_date\",\"resources\":[]}`. The JSON gives no evidence a destructive overwrite happened — the exact case where the user needs confirmation of what was discarded.",
+      "fail_note": "`--force` triggers a real file overwrite, so the output should enumerate what was reverted (e.g., `reverted:[{kind,owner,name,path}]`). As-is, a script that relies on `resources:[]` to mean \"nothing changed\" can't distinguish a no-op pull from a destructive one.",
+      "steps": [
+        { "label": "pre-status", "command": "clier status jakeraft/qa-20260420005852-parent", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"local\":\"modified\",summary.modified:1" },
+        { "label": "pull-force", "command": "clier pull jakeraft/qa-20260420005852-parent --force", "exit_code": 0, "status": "fail", "stdout_excerpt": "\"status\":\"already_up_to_date\",\"resources\":[]" },
+        { "label": "file-reverted", "command": "cat SKILL.md", "exit_code": 0, "status": "pass", "stdout_excerpt": "matches pinned v4 content (local \"dirty\" edit gone)" }
+      ]
+    },
+    {
+      "id": "versions.pin-rejected-by-fork",
+      "title": "`fork owner/name@<v>` is rejected with explanatory error",
+      "status": "pass",
+      "rationale": "`clier fork @clier/hello-claude@1` returned `invalid_argument: expected <owner/name> without @<version>`. Matches the `fork` help: \"Fork only accepts <owner/name>; historical versions are not fork targets.\"",
+      "command": "clier fork @clier/hello-claude@1",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"invalid_argument\",\"message\":\"invalid request: expected <owner/name> without @<version>, got \\\"@clier/hello-claude@1\\\"\""
+    },
+    {
+      "id": "versions.nonexistent-version",
+      "title": "`get owner/name@<unknown>` returns structured `resource_version_not_found`",
+      "status": "pass",
+      "rationale": "`clier get jakeraft/qa-20260420005852-skill@999` returned kind `resource_version_not_found` with subject `{name,owner,resource_kind,version}` populated — callers can route on `error.kind` without regex parsing.",
+      "command": "clier get jakeraft/qa-20260420005852-skill@999",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"resource_version_not_found\",\"subject\":{\"version\":\"999\",...}"
+    },
+    {
+      "id": "errors.edit-instruction-hint-misleading",
+      "title": "`--instruction owner/name` is rejected but the hint advertises that form as valid",
+      "status": "fail",
+      "rationale": "`clier edit jakeraft/qa-20260420005852-parent --instruction jakeraft/qa-20260420005852-instr` returned `invalid_resource_ref` with hint `use the form <owner/name> or <owner/name>@<version>`. The ref I passed IS `<owner/name>`, yet the flag requires a pinned version — the hint contradicts the actual acceptance rule for this flag and will lead a retry with the identical bare form.",
+      "fail_note": "The hint should be flag-aware. For team refs that pin versions (`--instruction`, `--skill`, `--child`, `--claude-settings`, `--codex-settings`), the hint should read `use the form <owner/name>@<version>` only. The current text makes the bare form look acceptable.",
+      "command": "clier edit jakeraft/qa-20260420005852-parent --instruction jakeraft/qa-20260420005852-instr",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"invalid_resource_ref\",\"hint\":\"use the form <owner/name> or <owner/name>@<version>\""
+    },
+    {
+      "id": "errors.invalid-request-shape",
+      "title": "Invalid argument / format errors are structured and terse",
+      "status": "pass",
+      "rationale": "`create skill` without `--name` returned `invalid_argument: required flag(s) \\\"name\\\" not set`; with `--name \"has spaces\"` returned `invalid_argument: name: invalid format`; malformed owner/name (`clier get badformat`) returned the same kind with the exact bad input quoted.",
+      "steps": [
+        { "label": "missing-required-flag", "command": "clier create skill --content x", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"flags\":\"name\"" },
+        { "label": "invalid-name-format", "command": "clier create skill --name \"has spaces\" --content x", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"detail\":\"name: invalid format\"" },
+        { "label": "malformed-owner-name", "command": "clier get badformat", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"detail\":\"expected <owner/name>, got \\\"badformat\\\"\"" }
+      ]
+    },
+    {
+      "id": "errors.resource-in-use-blocks-delete",
+      "title": "`delete` refuses to orphan a team ref",
+      "status": "pass",
+      "rationale": "`clier delete jakeraft/qa-20260420005852-skill` (while still referenced by the parent team) returned `resource_in_use` naming the holding team. The team's ref graph is enforced at delete time.",
+      "command": "clier delete jakeraft/qa-20260420005852-skill",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"resource_in_use\",\"message\":\"cannot delete jakeraft/qa-20260420005852-skill: still referenced by team jakeraft/qa-20260420005852-parent\""
+    },
+    {
+      "id": "errors.remove-dirty-guard",
+      "title": "`remove` refuses to drop a dirty workspace",
+      "status": "pass",
+      "rationale": "With one modified file, `clier remove jakeraft/qa-20260420005852-parent` returned `workspace_dirty` with hint `push or revert before removing` — matches the behavior the `remove` help advertises.",
+      "command": "clier remove jakeraft/qa-20260420005852-parent",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"workspace_dirty\",\"hint\":\"push or revert before removing\""
+    },
+    {
+      "id": "run.duplicate-start-guard",
+      "title": "`run start` refuses a second concurrent run on the same working copy",
+      "status": "pass",
+      "rationale": "`clier run start @clier/clier-qa-claude` (from inside the already-running session) returned `run_already_running` naming the active run and offering two remediations: stop it, or fork to run in parallel.",
+      "command": "clier run start @clier/clier-qa-claude",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"run_already_running\",\"hint\":\"stop it first with 'clier run stop 20260419T155839-f0a0faab', or fork the team to run in parallel\""
+    },
+    {
+      "id": "run.start-timeout-no-residue",
+      "title": "Failed `run start` leaves no orphan run plan",
+      "status": "pass",
+      "rationale": "The disposable parent team's command (`claude --version`) exits immediately, so `run start` returned `run_start_timeout`. A follow-up `run list` showed no new entry for the disposable working copy — no leftover state to reap.",
+      "command": "clier run start jakeraft/qa-20260420005852-parent",
+      "exit_code": 1,
+      "stdout_excerpt": "\"kind\":\"run_start_timeout\",\"hint\":\"check the agent's terminal with 'clier run attach <run-id>' or restart with 'clier run start'\""
+    },
+    {
+      "id": "run.tell-and-note-surface",
+      "title": "`run tell` via stdin, `run note --run`, and `run view` all parseable",
+      "status": "pass",
+      "rationale": "`echo ... | clier run tell --run <id> --to <agent>` returned `{\"status\":\"delivered\",\"from\",\"to\",\"run\"}`; `run note --run <id>` returned `{\"status\":\"posted\",\"agent\",\"run\"}`; `run view <id>` returned a single object with `agents[]`, `messages[]`, `notes[]` — delivery + log surface is fully queryable without tmux attach.",
+      "command": "clier run view 20260419T155839-f0a0faab",
+      "exit_code": 0,
+      "stdout_excerpt": "\"status\":\"running\",\"agents\":[{\"id\":\"@clier/clier-qa-claude\"}],\"messages\":[...],\"notes\":[...]"
+    },
+    {
+      "id": "run.errors-guide-next-action",
+      "title": "`run` error hints consistently name the next command",
+      "status": "pass",
+      "rationale": "`run view/stop/note <bad-id>` all return `run_not_found` with `hint:\"list active runs with 'clier run list'\"`; `run tell --to @fake/nobody` returns `agent_not_in_run` with `hint:\"run 'clier run view <run-id>' to see available agents\"`. Every error points at the exact CLI to try next.",
+      "steps": [
+        { "label": "view-nonexistent", "command": "clier run view nonexistent-run", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"kind\":\"run_not_found\",\"hint\":\"list active runs with 'clier run list'\"" },
+        { "label": "tell-missing-agent", "command": "clier run tell --run ... --to @fake/nobody hi", "exit_code": 1, "status": "pass", "stdout_excerpt": "\"kind\":\"agent_not_in_run\",\"hint\":\"run 'clier run view <run-id>' to see available agents\"" }
+      ]
+    },
+    {
+      "id": "cleanup.no-leftover-state",
+      "title": "All disposable resources and working copies removed",
+      "status": "pass",
+      "rationale": "After `remove jakeraft/qa-20260420005852-parent` and `delete` for parent, child, skill, instruction, claude-settings, codex-settings, the workspace directory is free of `jakeraft.qa-20260420005852-*` entries, and `clier list --mine --query qa-20260420005852` returns `{\"items\":[],\"total\":0}`.",
+      "command": "clier list --mine --query qa-20260420005852",
+      "exit_code": 0,
+      "stdout_excerpt": "{\"items\":[],\"total\":0}"
+    }
+  ]
+}
