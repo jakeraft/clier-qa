@@ -65,7 +65,7 @@ async function renderList() {
   const res = await fetch('reports/index.json', { cache: 'no-cache' });
   if (!res.ok) throw new Error(`reports/index.json: ${res.status}`);
   const items = await res.json();
-  items.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+  items.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
 
   $app.append(
     h('div', { class: 'ix-head' },
