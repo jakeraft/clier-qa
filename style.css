@@ -1,0 +1,440 @@
+/* clier QA — sober document style */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --c-text: #111;
+  --c-muted: #555;
+  --c-faint: #888;
+  --c-border: #d0d7de;
+  --c-border-strong: #1a1a1a;
+  --c-bg: #fff;
+  --c-bg-alt: #f6f8fa;
+  --c-pass: #065f46;
+  --c-fail: #991b1b;
+  --c-skip: #6b7280;
+  --c-error: #92400e;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--c-text);
+  background: var(--c-bg);
+}
+a { color: inherit; }
+
+.doc { max-width: 880px; margin: 0 auto; padding: 36px 32px 80px; }
+
+/* crumb */
+.crumb {
+  font-size: 11px;
+  color: var(--c-muted);
+  margin-bottom: 20px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--c-border);
+}
+.crumb a { color: var(--c-muted); text-decoration: none; }
+.crumb a:hover { text-decoration: underline; color: var(--c-text); }
+
+/* title */
+.doc-title {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--c-text);
+  margin-bottom: 10px;
+}
+.doc-sub {
+  font-size: 12px;
+  color: var(--c-muted);
+  margin-bottom: 20px;
+}
+.doc-sub code { font-family: var(--font-mono); font-size: 11px; }
+
+/* metadata table */
+table.meta {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 22px;
+  border: 1px solid var(--c-border);
+}
+table.meta th, table.meta td {
+  padding: 5px 10px;
+  border: 1px solid var(--c-border);
+  text-align: left;
+  vertical-align: top;
+}
+table.meta th {
+  width: 130px;
+  background: var(--c-bg-alt);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  color: var(--c-muted);
+}
+table.meta td { font-family: var(--font-mono); font-size: 12px; }
+table.meta td.narrow { font-family: var(--font-sans); }
+
+/* section heading */
+section { margin-top: 26px; }
+section > h2 {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--c-text);
+  margin-bottom: 10px;
+}
+section > h2 .num { color: var(--c-muted); margin-right: 8px; font-family: var(--font-mono); font-weight: 700; }
+section > h2 .chip {
+  float: right;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--c-muted);
+  letter-spacing: 0.4px;
+}
+section h3 {
+  font-size: 12px;
+  font-weight: 700;
+  margin: 14px 0 6px;
+}
+section h3 .num {
+  color: var(--c-muted);
+  margin-right: 8px;
+  font-family: var(--font-mono);
+}
+section h4 {
+  font-size: 10px;
+  font-weight: 700;
+  margin: 10px 0 4px;
+  color: var(--c-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+p {
+  font-size: 13px;
+  margin-bottom: 8px;
+  line-height: 1.55;
+}
+p code, td code, li code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: var(--c-bg-alt);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+/* main data tables */
+table.t {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+table.t thead th {
+  padding: 6px 10px;
+  background: var(--c-text);
+  color: #fff;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  border-right: 1px solid #333;
+  white-space: nowrap;
+}
+table.t thead th:last-child { border-right: none; }
+table.t tbody td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-border);
+  vertical-align: top;
+  line-height: 1.45;
+}
+table.t tbody td:first-child { border-left: 1px solid var(--c-border); }
+table.t tbody td:last-child  { border-right: 1px solid var(--c-border); }
+table.t tbody tr:nth-child(even) td { background: var(--c-bg-alt); }
+
+table.t code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: rgba(0,0,0,0.04);
+  padding: 0 3px;
+  border-radius: 2px;
+}
+
+/* status / source / guidance cells */
+.col-st { width: 68px; }
+.col-src { width: 64px; }
+.col-gd { width: 78px; }
+.col-num { width: 44px; }
+.col-role { width: 76px; }
+.col-dur { width: 60px; }
+
+.st {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  text-align: center;
+  white-space: nowrap;
+}
+.st.pass  { color: var(--c-pass); }
+.st.fail  { color: var(--c-fail); }
+.st.skip  { color: var(--c-skip); }
+.st.error { color: var(--c-error); }
+
+.src {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--c-muted);
+  text-align: center;
+}
+
+.gd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  font-weight: 700;
+  text-align: center;
+}
+.gd.good    { color: var(--c-pass); }
+.gd.poor    { color: var(--c-error); }
+.gd.missing { color: var(--c-fail); }
+
+.num {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--c-muted);
+  font-size: 11px;
+}
+
+.role {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--c-muted);
+}
+.role.assertion { color: var(--c-text); font-weight: 700; }
+
+.dur {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* evidence block inside a cell */
+.ev {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-muted);
+  margin-top: 4px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.ev.fail { color: var(--c-fail); }
+.ev-label {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--c-faint);
+  margin-right: 4px;
+  font-weight: 700;
+}
+
+/* finding block (observation / scenario fail) */
+.finding {
+  border: 1px solid var(--c-border);
+  border-left: 3px solid var(--c-text);
+  padding: 10px 14px;
+  margin: 10px 0 14px;
+  background: var(--c-bg);
+}
+.finding.fail { border-left-color: var(--c-fail); }
+.finding.error { border-left-color: var(--c-error); }
+.finding.warn { border-left-color: var(--c-error); background: #fffbeb; }
+
+.finding-head {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+.finding h3 { margin: 0 0 6px; font-size: 13px; font-weight: 700; }
+
+.excerpt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--c-bg-alt);
+  border: 1px solid var(--c-border);
+  padding: 6px 8px;
+  margin: 6px 0;
+  white-space: pre-wrap;
+  color: var(--c-text);
+  line-height: 1.5;
+}
+.excerpt-label {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--c-muted);
+  margin: 8px 0 3px;
+  font-weight: 700;
+}
+.excerpt-label:first-child { margin-top: 0; }
+
+/* scenario sub-block */
+.scenario {
+  border: 1px solid var(--c-border);
+  padding: 10px 14px;
+  margin: 8px 0 16px;
+  background: var(--c-bg);
+}
+.scenario.fail { border-left: 3px solid var(--c-fail); padding-left: 12px; }
+.scenario-title {
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+dl.outcome {
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 3px 10px;
+  font-size: 11px;
+  margin-bottom: 8px;
+  padding: 6px 8px;
+  background: var(--c-bg-alt);
+  border-left: 2px solid var(--c-border-strong);
+}
+dl.outcome dt {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--c-muted);
+  font-weight: 700;
+}
+dl.outcome dd { font-family: var(--font-mono); font-size: 11px; }
+dl.outcome dd.pass { color: var(--c-pass); }
+dl.outcome dd.fail { color: var(--c-fail); }
+
+/* captured */
+.captured {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text);
+  background: #ecfdf5;
+  padding: 1px 5px;
+  border: 1px solid #a7f3d0;
+  margin: 2px 0 0;
+}
+.captured::before {
+  content: 'captured';
+  font-family: var(--font-sans);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 8px;
+  color: #065f46;
+  margin-right: 4px;
+  font-weight: 700;
+}
+
+/* footer */
+footer {
+  margin-top: 40px;
+  padding-top: 10px;
+  border-top: 1px solid var(--c-border);
+  font-size: 11px;
+  color: var(--c-muted);
+  display: flex; justify-content: space-between;
+}
+footer code { font-family: var(--font-mono); }
+
+/* index */
+.ix-head { margin-bottom: 20px; }
+.ix-head h1 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+  border-bottom: 2px solid var(--c-text);
+  margin-bottom: 10px;
+}
+.ix-head p { font-size: 12px; color: var(--c-muted); }
+.ix-head p code { font-family: var(--font-mono); font-size: 11px; }
+
+table.ix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+table.ix thead th {
+  padding: 6px 10px;
+  background: var(--c-text);
+  color: #fff;
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  border-right: 1px solid #333;
+  white-space: nowrap;
+}
+table.ix thead th:last-child { border-right: none; }
+table.ix tbody td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--c-border);
+  border-right: 1px solid var(--c-border);
+  vertical-align: top;
+}
+table.ix tbody td:first-child { border-left: 1px solid var(--c-border); }
+table.ix tbody td:last-child  { border-right: 1px solid var(--c-border); }
+table.ix tbody tr:hover td { background: var(--c-bg-alt); cursor: pointer; }
+table.ix a { text-decoration: none; color: inherit; display: block; }
+table.ix td.date {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+  font-weight: 600;
+}
+table.ix td.counts {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  white-space: nowrap;
+}
+table.ix td.verdict {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+}
+table.ix td.verdict.pass { color: var(--c-pass); }
+table.ix td.verdict.fail { color: var(--c-fail); }
+table.ix td.verdict.error { color: var(--c-error); }

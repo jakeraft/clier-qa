@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>clier QA</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app" class="doc"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────────
+// clier QA SPA — consumes report-v1 (flat shape)
+// #/              → list view   (reports/index.json)
+// #/report/<id>   → detail view (reports/<id>.json)
+// ─────────────────────────────────────────────────────────────────
+
+const $app = document.getElementById('app');
+
+const h = (tag, attrs = {}, ...kids) => {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v === undefined || v === null || v === false) continue;
+    if (k === 'class') el.className = v;
+    else if (k === 'html') el.innerHTML = v;
+    else if (k.startsWith('on')) el.addEventListener(k.slice(2), v);
+    else el.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat()) {
+    if (c === null || c === undefined || c === false) continue;
+    el.append(c.nodeType ? c : document.createTextNode(String(c)));
+  }
+  return el;
+};
+const clear = (el) => { while (el.firstChild) el.removeChild(el.firstChild); };
+const esc = (s) => s === null || s === undefined ? ''
+  : String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const md = (s) => esc(s).replace(/`([^`]+)`/g, '<code>$1</code>')
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+const route = () => {
+  const hash = location.hash.replace(/^#\/?/, '');
+  if (!hash) return { name: 'list' };
+  const m = hash.match(/^report\/(.+)$/);
+  return m ? { name: 'detail', id: decodeURIComponent(m[1]) } : { name: 'list' };
+};
+
+const render = async () => {
+  clear($app);
+  try {
+    route().name === 'list' ? await renderList() : await renderDetail(route().id);
+  } catch (e) {
+    $app.append(h('div', { class: 'finding fail' },
+      h('div', { class: 'finding-head' }, 'render error'),
+      h('p', {}, String(e.message || e))));
+    throw e;
+  }
+};
+window.addEventListener('hashchange', render);
+window.addEventListener('DOMContentLoaded', render);
+
+// ═════ LIST ══════════════════════════════════════════════════════════
+async function renderList() {
+  const res = await fetch('reports/index.json', { cache: 'no-cache' });
+  if (!res.ok) throw new Error(`reports/index.json: ${res.status}`);
+  const items = await res.json();
+  items.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+
+  $app.append(
+    h('div', { class: 'ix-head' },
+      h('h1', {}, 'clier QA Reports'),
+      h('p', { html: 'QA from the <strong>agent-as-consumer</strong> lens. Reports are data — rendered from <code>reports/*.json</code> against <code>report-v1</code>.' })
+    )
+  );
+
+  if (!items.length) {
+    $app.append(h('p', { class: 'empty', style: 'padding: 24px; text-align: center; color: var(--c-muted);' }, 'No reports yet.'),
+      h('footer', {}, h('div', {}, 'schema report-v1')));
+    return;
+  }
+
+  const tbody = h('tbody');
+  for (const it of items) {
+    const date = fmtDate(it.id);
+    const c = it.counts || { pass: 0, fail: 0, skip: 0, error: 0 };
+    const countsText = `${c.pass} / ${c.fail} / ${c.skip} / ${c.error}`;
+    const verdict = it.verdict || 'pass';
+    const href = `#/report/${encodeURIComponent(it.id)}`;
+    tbody.append(
+      h('tr', {},
+        h('td', { class: 'date'   }, h('a', { href }, date)),
+        h('td', {},                  h('a', { href }, it.clier_version || '—')),
+        h('td', {},                  h('a', { href, html: md(it.summary || '') })),
+        h('td', { class: 'counts' }, h('a', { href }, countsText)),
+        h('td', { class: `verdict ${verdict}` }, h('a', { href }, verdict.toUpperCase()))
+      )
+    );
+  }
+
+  $app.append(
+    h('table', { class: 'ix' },
+      h('thead', {}, h('tr', {},
+        h('th', {}, 'Run'),
+        h('th', {}, 'clier'),
+        h('th', {}, 'Summary'),
+        h('th', {}, 'P / F / S / E'),
+        h('th', {}, 'Verdict'))),
+      tbody),
+    h('footer', {},
+      h('div', {}, `${items.length} reports`),
+      h('div', { html: 'schema <code>report-v1</code>' }))
+  );
+}
+
+// ═════ DETAIL ════════════════════════════════════════════════════════
+async function renderDetail(id) {
+  const res = await fetch(`reports/${id}.json`, { cache: 'no-cache' });
+  if (!res.ok) throw new Error(`reports/${id}.json: ${res.status}`);
+  const r = await res.json();
+  if (r.schema_version !== 1) throw new Error(`unsupported schema_version: ${r.schema_version}`);
+
+  const findings = r.findings || [];
+  const c = countBy(findings, 'status');
+  const verdict = (c.fail + c.error) === 0 ? 'PASS' : 'FAIL';
+
+  $app.append(h('div', { class: 'crumb' },
+    h('a', { href: '#/' }, 'QA Reports'), ' / ', r.id));
+
+  $app.append(
+    h('div', { class: 'doc-title' }, 'clier QA Report'),
+    h('div', { class: 'doc-sub', html: `Run <code>${esc(r.id)}</code> · Verdict <strong>${verdict}</strong>` }),
+    renderMeta(r),
+    renderSummary(c, verdict, r.summary),
+    renderFindings(findings),
+    h('footer', {},
+      h('div', { html: `Run <code>${esc(r.id)}</code>` }),
+      h('div', { html: 'Schema <code>report-v1</code>' }))
+  );
+}
+
+function renderMeta(r) {
+  const modelText = r.agent ? `${r.agent.kind}${r.agent.model ? ' / ' + r.agent.model : ''}` : '—';
+  return h('table', { class: 'meta' }, h('tbody', {},
+    h('tr', {},
+      h('th', {}, 'Started'),  h('td', {}, fmtTs(r.started_at)),
+      h('th', {}, 'Finished'), h('td', {}, fmtTs(r.finished_at))),
+    h('tr', {},
+      h('th', {}, 'Duration'), h('td', {}, fmtDuration(r.started_at, r.finished_at)),
+      h('th', {}, 'OS'),       h('td', {}, r.os || '—')),
+    h('tr', {},
+      h('th', {}, 'clier'),    h('td', {}, 'v' + (r.clier_version || '—')),
+      h('th', {}, 'Agent'),    h('td', { class: 'narrow' }, modelText)),
+    h('tr', {},
+      h('th', {}, 'Auth'),     h('td', {}, r.auth_target || '—'),
+      h('th', {}, 'Prefix'),   h('td', {}, r.disposable_prefix || '—'))
+  ));
+}
+
+function renderSummary(c, verdict, summary) {
+  const sec = h('section', {});
+  sec.append(h('h2', { html: `<span class="num">1.</span>Summary` }));
+  sec.append(h('table', { class: 't' },
+    h('thead', {}, h('tr', {},
+      h('th', {}, 'Total'), h('th', {}, 'Pass'),
+      h('th', {}, 'Fail'), h('th', {}, 'Error'), h('th', {}, 'Skip'))),
+    h('tbody', {},
+      h('tr', {},
+        h('td', { class: 'num' },     c.total || 0),
+        h('td', { class: 'st pass' }, c.pass || 0),
+        h('td', { class: 'st fail' }, c.fail || 0),
+        h('td', { class: 'st error'}, c.error || 0),
+        h('td', { class: 'st skip' }, c.skip || 0)))
+  ));
+  if (summary) sec.append(h('p', { style: 'margin-top: 12px;', html: md(summary) }));
+  return sec;
+}
+
+function renderFindings(findings) {
+  const sec = h('section', {});
+  sec.append(h('h2', { html: `<span class="num">2.</span>Findings` }));
+
+  if (!findings.length) {
+    sec.append(h('p', { class: 'empty' }, 'No findings in this run.'));
+    return sec;
+  }
+
+  const thead = h('thead', {}, h('tr', {},
+    h('th', { class: 'col-num' }, '#'),
+    h('th', {}, 'Finding'),
+    h('th', { class: 'col-st' }, 'Status'),
+    h('th', {}, 'Evidence')));
+
+  const tbody = h('tbody');
+  findings.forEach((f, i) => tbody.append(renderFindingRow(i + 1, f)));
+  sec.append(h('table', { class: 't' }, thead, tbody));
+  return sec;
+}
+
+function renderFindingRow(i, f) {
+  const cell = h('td', {});
+
+  // rationale is always present for findings
+  cell.append(h('span', { class: 'ev agent', html: md(f.rationale) }));
+
+  if (f.fail_note)    cell.append(h('span', { class: 'ev fail',  html: esc(f.fail_note) }));
+  if (f.skip_reason)  cell.append(h('span', { class: 'ev',       html: `<em>${esc(f.skip_reason)}</em>` }));
+  if (f.error_detail) cell.append(h('span', { class: 'ev fail',  html: esc(f.error_detail) }));
+
+  // inline command evidence
+  const bits = [];
+  if (f.command)        bits.push(`<span class="ev-label">cmd</span><code>${esc(f.command)}</code>`);
+  if (f.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${f.exit_code}`);
+  if (f.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(f.stdout_excerpt)}`);
+  if (f.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(f.stderr_excerpt)}`);
+  if (f.duration_ms !== undefined) bits.push(`<span class="ev-label">dur</span>${fmtMs(f.duration_ms)}`);
+  if (bits.length) cell.append(h('span', { class: 'ev' + (f.status === 'fail' || f.status === 'error' ? ' fail' : ''), html: bits.join('  ') }));
+
+  // multi-step
+  if (f.steps?.length) {
+    const stbody = h('tbody');
+    f.steps.forEach((st, k) => stbody.append(renderStepRow(k + 1, st)));
+    cell.append(h('table', { class: 't steps', style: 'margin-top: 6px;' },
+      h('thead', {}, h('tr', {},
+        h('th', { class: 'col-num' }, '#'),
+        h('th', {}, 'Step'),
+        h('th', { class: 'col-st' }, 'Status'))),
+      stbody));
+  }
+
+  // references
+  if (f.references?.length) {
+    for (const ref of f.references) {
+      if (ref.label) cell.append(h('span', { class: 'excerpt-label' }, ref.label));
+      if (ref.excerpt) cell.append(h('div', { class: 'excerpt' }, ref.excerpt));
+      else if (ref.url) cell.append(h('div', { class: 'excerpt' }, ref.url));
+    }
+  }
+
+  return h('tr', {},
+    h('td', { class: 'num' }, `2.${i}`),
+    h('td', { html: md(f.title) }),
+    h('td', { class: `st ${f.status}` }, f.status.toUpperCase()),
+    cell);
+}
+
+function renderStepRow(num, st) {
+  const body = h('td', {});
+  body.append(h('span', { class: 'step-label', html: md(st.label) }));
+  if (st.command) body.append(h('span', { class: 'ev', html: `<code>${esc(st.command)}</code>` }));
+  const bits = [];
+  if (st.exit_code !== undefined) bits.push(`<span class="ev-label">exit</span>${st.exit_code}`);
+  if (st.stdout_excerpt) bits.push(`<span class="ev-label">stdout</span>${esc(st.stdout_excerpt)}`);
+  if (st.stderr_excerpt) bits.push(`<span class="ev-label">stderr</span>${esc(st.stderr_excerpt)}`);
+  if (bits.length) body.append(h('span', { class: 'ev' + (st.status === 'fail' ? ' fail' : ''), html: bits.join('  ') }));
+  if (st.skip_reason) body.append(h('span', { class: 'ev', html: `<em>${esc(st.skip_reason)}</em>` }));
+  return h('tr', { class: `step ${st.status}` },
+    h('td', { class: 'num' }, num),
+    body,
+    h('td', { class: `st ${st.status}` }, st.status.toUpperCase()));
+}
+
+// ─── utils ───────────────────────────────────────────────────────────
+function countBy(items, key) {
+  const c = { total: items.length, pass: 0, fail: 0, skip: 0, error: 0 };
+  for (const it of items) c[it[key]] = (c[it[key]] || 0) + 1;
+  return c;
+}
+function fmtDate(id) {
+  const m = (id || '').match(/^(\d{4}-\d{2}-\d{2})T(\d{2})(\d{2})/);
+  return m ? `${m[1]} ${m[2]}:${m[3]}` : (id || '');
+}
+function fmtTs(iso) {
+  try {
+    const d = new Date(iso);
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())} KST`;
+  } catch { return iso; }
+}
+function fmtDuration(a, b) {
+  const ms = new Date(b) - new Date(a);
+  if (!isFinite(ms) || ms < 0) return '—';
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s / 60)}m ${s % 60}s`;
+}
+function fmtMs(ms) { return ms >= 1000 ? (ms / 1000).toFixed(1) + 's' : ms + 'ms'; }
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jakeraft.github.io/clier-qa/schema/report-v1.schema.json",
+  "title": "clier QA Report (v1)",
+  "description": "Flat QA report. One run produces one report: top-level metadata + narrative summary + a flat findings array. No wrappers, no sub-sections.",
+  "type": "object",
+  "required": ["schema_version", "id", "started_at", "finished_at", "clier_version", "summary", "findings"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "id":             { "type": "string" },
+    "started_at":     { "type": "string", "format": "date-time" },
+    "finished_at":    { "type": "string", "format": "date-time" },
+    "os":             { "type": "string" },
+    "clier_version":  { "type": "string" },
+    "auth_target":    { "type": "string" },
+    "disposable_prefix": { "type": "string" },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind":  { "enum": ["claude", "codex"] },
+        "model": { "type": "string" }
+      }
+    },
+    "summary":  { "type": "string", "description": "One narrative paragraph describing the run." },
+    "findings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/finding" }
+    }
+  },
+
+  "$defs": {
+    "status": {
+      "enum": ["pass", "fail", "skip", "error"],
+      "description": "pass: verified ok · fail: CLI defect · skip: not exercised · error: test-machinery failure."
+    },
+
+    "finding": {
+      "type": "object",
+      "required": ["id", "title", "status", "rationale"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)*$"
+        },
+        "title":        { "type": "string" },
+        "status":       { "$ref": "#/$defs/status" },
+        "rationale":    { "type": "string" },
+        "fail_note":    { "type": "string" },
+        "skip_reason":  { "type": "string" },
+        "error_detail": { "type": "string" },
+        "command":        { "type": "string",  "description": "Primary CLI invocation the finding is about, if any." },
+        "exit_code":      { "type": "integer" },
+        "stdout_excerpt": { "type": "string" },
+        "stderr_excerpt": { "type": "string" },
+        "duration_ms":    { "type": "integer", "minimum": 0 },
+        "steps":      { "type": "array", "items": { "$ref": "#/$defs/step" } },
+        "references": { "type": "array", "items": { "$ref": "#/$defs/reference" } }
+      },
+      "allOf": [
+        { "if": { "properties": { "status": { "const": "fail"  } }, "required": ["status"] },
+          "then": { "required": ["fail_note"] } },
+        { "if": { "properties": { "status": { "const": "skip"  } }, "required": ["status"] },
+          "then": { "required": ["skip_reason"] } },
+        { "if": { "properties": { "status": { "const": "error" } }, "required": ["status"] },
+          "then": { "required": ["error_detail"] } }
+      ]
+    },
+
+    "step": {
+      "type": "object",
+      "required": ["label", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "label":          { "type": "string" },
+        "command":        { "type": "string" },
+        "exit_code":      { "type": "integer" },
+        "stdout_excerpt": { "type": "string" },
+        "stderr_excerpt": { "type": "string" },
+        "duration_ms":    { "type": "integer", "minimum": 0 },
+        "status":         { "$ref": "#/$defs/status" },
+        "skip_reason":    { "type": "string" },
+        "error_detail":   { "type": "string" }
+      }
+    },
+
+    "reference": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind":    { "enum": ["help_output", "tutorial_step", "doc_excerpt", "url"] },
+        "label":   { "type": "string" },
+        "excerpt": { "type": "string" },
+        "url":     { "type": "string", "format": "uri" }
+      }
+    }
+  }
+}
