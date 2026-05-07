@@ -1,16 +1,41 @@
 [
   {
+    "id": "qa-20260507-082118-8ff54726",
+    "clier_version": "dev-7ca39b6",
+    "summary": "Full free-form sweep + tutorial walkthrough on dev-7ca39b6. Prior stop-idempotency regression is fixed. Two new fails: run capture --lines silently accepts negative values (out-of-range bounds not loud, unlike team list --page-size), and tutorial does not walk team create/update/delete/star/unstar or any error envelope.",
+    "verdict": "fail",
+    "counts": {
+      "total": 34,
+      "pass": 31,
+      "fail": 2,
+      "skip": 1,
+      "error": 0
+    }
+  },
+  {
     "id": "qa-20260507-073601-517b0f7d",
     "clier_version": "dev-01e85e9",
     "summary": "Tutorial walkthrough + full team/run lifecycle pass on dev-01e85e9; the two prior stray-positional fails are fixed. One new fail: `clier run stop --help` claims idempotency but a second stop on an already-stopped run returns error 1.",
     "verdict": "fail",
-    "counts": { "total": 19, "pass": 18, "fail": 1, "skip": 0, "error": 0 }
+    "counts": {
+      "total": 19,
+      "pass": 18,
+      "fail": 1,
+      "skip": 0,
+      "error": 0
+    }
   },
   {
     "id": "qa-20260507-064322-b662abb3",
     "clier_version": "dev-e85fb12",
-    "summary": "Tutorial walkthrough (Phase 1 + Phase 2) and full team/run lifecycle pass; 3 fail findings — `clier version` and `clier team list` silently swallow stray positional args, and the tutorial omits unstar/reset-protocol/delete/failure-path coverage.",
+    "summary": "Tutorial walkthrough (Phase 1 + Phase 2) and full team/run lifecycle pass; 3 fail findings \u2014 `clier version` and `clier team list` silently swallow stray positional args, and the tutorial omits unstar/reset-protocol/delete/failure-path coverage.",
     "verdict": "fail",
-    "counts": { "total": 41, "pass": 37, "fail": 3, "skip": 1, "error": 0 }
+    "counts": {
+      "total": 41,
+      "pass": 37,
+      "fail": 3,
+      "skip": 1,
+      "error": 0
+    }
   }
 ]
