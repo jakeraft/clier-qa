@@ -70,12 +70,27 @@ Build findings in memory as you go. **Every id starts with `claude.<area>.<slug>
 
 ## 4. Cross-coverage check
 
-Compare your free-form exploration findings (§2) against the tutorial walkthrough (§3). Two failure modes to record:
+`clier tutorial` is intentionally a *minimum first-run path* — five
+minutes, the happy run lifecycle (auth/list/start/tell/capture/attach/
+stop). Commands beyond that path live in `clier <command> --help` as
+the source of truth and are exercised by free-form (§2). Cross-
+coverage therefore checks symmetry of the *tutorial path itself*, not
+of the whole command surface.
 
-- **Tutorial step not exercised by free-form** → `claude.coverage.tutorial-step-untested`, name the step.
-- **Free-form dimension absent from tutorial** → `claude.coverage.tutorial-missing-dimension`.
+Record only:
 
-A clean cross-coverage = both directions empty.
+- **Tutorial step the tutorial declares but free-form did not actually
+  walk** → `claude.coverage.tutorial-step-untested`, name the step.
+- **Tutorial step whose runtime behaviour diverges from the
+  tutorial's text** → already a Trust 2 fail; cite that finding here
+  with `claude.coverage.tutorial-step-drift`.
+
+Do **not** record a finding because free-form covered commands the
+tutorial does not walk (team create / update / star / unstar / reset-
+protocol / delete, error-envelope probes, etc.). The tutorial is not
+trying to walk those — `clier <command> --help` is the SSOT for
+those, and free-form is exactly how they are validated. A clean
+tutorial-path = both directions empty.
 
 ## 5. Publish
 
