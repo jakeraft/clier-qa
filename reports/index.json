@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "qa-20260507-064322-b662abb3",
+    "clier_version": "dev-e85fb12",
+    "summary": "Tutorial walkthrough (Phase 1 + Phase 2) and full team/run lifecycle pass; 3 fail findings — `clier version` and `clier team list` silently swallow stray positional args, and the tutorial omits unstar/reset-protocol/delete/failure-path coverage.",
+    "verdict": "fail",
+    "counts": { "total": 41, "pass": 37, "fail": 3, "skip": 1, "error": 0 }
+  }
+]
