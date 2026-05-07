@@ -42,6 +42,8 @@ The session is pre-authenticated by the operator before the run starts — you a
 ### Trust 1 — Orient from nothing
 Start at `clier --help` and recurse into `--help` of every subcommand it lists. A new agent must be able to discover the canonical workflow from those pages alone. Surface anything reachable but invisible from help, or visible in help but not actually reachable.
 
+Routing slots that exist only to reject (an intentionally hidden `help` placeholder, etc.) do not count — they show up via `clier <command> <unknown>` and reject loudly with the standard `error: unknown command...` shape. That is by design and not a Trust 1 fail.
+
 ### Trust 2 — Canonical flow holds
 Walk every flow the help text or `clier tutorial` declares. For each documented step, run the exact command and judge whether output and resulting server state match what the docs promised.
 
@@ -49,13 +51,28 @@ Walk every flow the help text or `clier tutorial` declares. For each documented 
 Push every command into invalid input — wrong args, malformed values, missing required flags, immutable fields, unauthorized callers, unknown resources, empty content, out-of-range bounds, simultaneous multi-field violations. The CLI refuses loudly with a single stderr line that names *what* failed (status + title + detail). Multi-field violations surface every offender in one response — no short-circuit on the first one. The CLI does not append recovery hints; the agent rediscovers its next move from `clier --help`. (Auth itself is out of scope — do not run `auth login` / `auth logout` / `auth status` write paths.)
 
 ### Trust 4 — State is transparent
-For every state-changing command you find, verify there is a read-side command that surfaces the new state (and toggles you can flip back). Mutations with no read-side equivalent are hidden state. Idempotent operations must reach the same final state regardless of how many times you call them.
+For every state-changing command you find, verify there is a read-side command that surfaces the new state (and toggles you can flip back). Mutations with no read-side equivalent are hidden state.
+
+Verify idempotence **only where the command's `--help` promises it** ("Idempotent.", "idempotent set", "safe to run when no session exists", and the like). Two calls in a row must reach the same final state with the same exit code and the same JSON shape on stdout. Commands whose help does not advertise idempotence are out of scope for this probe — surface their actual semantics via Trust 2 / Trust 5 instead.
 
 ### Trust 5 — Output is parseable
-On success, every command emits valid JSON on stdout. Inspect for empty arrays as `[]` (never `null`), RFC3339 timestamps, stable field names across calls. Errors print on stderr starting with `error: ` and exit non-zero — server errors as one summary line, client-side validation may add a usage / suggestion line.
+On success, every command emits valid JSON on stdout. Probe for:
+
+- Empty collections as `[]` — never `null`, never absent.
+- Timestamps as RFC 3339 with offset (`2026-05-07T12:34:56+09:00`).
+- Stable field shape: a given command, run twice with the same inputs, returns the same key set on stdout. Field *values* of course differ between runs (timestamps, ids); the *keys* do not appear and disappear.
+
+Errors print on stderr starting with `error: ` and exit non-zero — server errors as one summary line of the form `<status> <title>: <detail>`, client-side validation as a single self-contained line. Both shapes parse with the same `error: ` prefix split.
 
 ### Trust 6 — No leftover state
-Every disposable resource you create uses your `qa-...-claude` prefix so cleanup is auditable. After lifecycle-terminating commands (run stop, team delete, etc.), the surface goes back to its pre-run state — `clier run stop` removes the wrapper dir (`~/.clier/runs/<run_id>/`) entirely (ADR-0004 §4.6), and `team delete` clears the server-side row. Inspect for orphans before you finish.
+Every disposable resource you create uses your `qa-...-claude` prefix so cleanup is auditable. After lifecycle-terminating commands the surface returns to its pre-run state.
+
+Two surfaces to verify before you finish:
+
+- **Server side**: `team delete` clears the row — a follow-up `team get` returns the standard not-found error envelope, and `team list --namespace <yourns>` no longer surfaces it.
+- **Local filesystem**: `run stop` removes the entire `~/.clier/runs/<run_id>/` directory (clones, protocols, run.json), so `run list` and `run view <stopped-id>` no longer see it. Verify with `ls ~/.clier/runs/` after the stop.
+
+A leftover dir or row after a documented terminator is a Trust 6 fail. Stop is also idempotent — calling it again on the same id (or on an unknown id) is a documented no-op success.
 
 Build findings in memory as you go. **Every id starts with `claude.<area>.<slug>`** (e.g. `claude.team.crud-lifecycle`).
 
