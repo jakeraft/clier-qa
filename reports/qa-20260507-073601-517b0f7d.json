@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "id": "qa-20260507-073601-517b0f7d",
+  "started_at": "2026-05-07T07:40:30Z",
+  "finished_at": "2026-05-07T07:46:01Z",
+  "os": "Darwin 24.5.0",
+  "clier_version": "dev-01e85e9",
+  "auth_target": "jakeraft",
+  "disposable_prefix": "qa-20260507074030-claude",
+  "agent": { "kind": "claude", "model": "claude-opus-4-7" },
+  "summary": "clier dev-01e85e9 holds together end-to-end: the help surface, every team CRUD step (create/get/update/star/unstar/reset-protocol/delete with subteam cascade-protection), the full run lifecycle (start/list/view/tell/capture/stop), and the canonical tutorial walkthrough all behave as documented. Errors print on stderr in the documented `error: <status> <title>: <detail>` shape (404/403/409/422 surface their detail), client-side rejections share the same single-line stderr shape, multi-field validation aggregates every offender with `; ` separators, idempotent operations (star/unstar) stay idempotent, JSON output uses `[]` (never null) for empty collections, RFC3339 timestamps carry their offset, and the run dir under `~/.clier/runs/<id>/` is cleanly removed by `run stop`. The two stray-positional defects from the prior run (`clier version foo`, `clier team list jakeraft`) are fixed in this build — both now reject with `error: unknown command \"…\" for \"clier …\"` and exit 1. One new fail surfaced: `clier run stop --help` advertises the command as idempotent (\"running it on an already-stopped run just clears any leftover dir\"), but a second `run stop` on the same id returns `error: run not found in ~/.clier/runs` with exit 1 — documented behaviour and actual behaviour disagree. Tutorial step 5 (`run attach`) was skipped because it requires an interactive TTY. Cross-coverage between the free-form pass and the tutorial walkthrough is otherwise clean except that team unstar / team reset-protocol / team delete / error-path matrix are exercised by free-form but never demonstrated in the tutorial — captured as a single coverage finding.",
+  "findings": [
+    {
+      "id": "claude.help.discoverability",
+      "title": "Top-level --help recurses cleanly into every subcommand",
+      "status": "pass",
+      "rationale": "Starting from `clier --help` a new agent sees the Available Commands list (auth, open, run, team, tutorial, version) plus the canonical entry points 'First run: clier tutorial' and 'Per command: clier <command> --help'. Recursing into each subcommand's help — including team's eight leaves and run's seven — every command is reachable, every flag is documented, and required-flag annotations on `team create` declare exactly what the wire layer needs.",
+      "command": "clier --help",
+      "exit_code": 0,
+      "stdout_excerpt": "First run:  clier tutorial\nPer command: clier <command> --help\n...\nAvailable Commands:\n  auth, open, run, team, tutorial, version"
+    },
+    {
+      "id": "claude.help.unknown-command-rejected",
+      "title": "Unknown commands and flags reject with single-line stderr and exit 1",
+      "status": "pass",
+      "rationale": "`clier nonsense`, `clier team nonsense`, and `clier team list --bogus` all print exactly one line to stderr starting with 'error: ', leave stdout empty, and exit non-zero — the same single-line shape promised by the top-level help text 'Errors print one line on stderr starting with \"error: \" and exit non-zero — the same single-line shape across server validation, client-side validation, and unknown commands.'",
+      "steps": [
+        { "label": "unknown top-level command", "command": "clier nonsense", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: unknown command \"nonsense\" for \"clier\"" },
+        { "label": "unknown subcommand", "command": "clier team nonsense", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: unknown command \"nonsense\" for \"clier team\"" },
+        { "label": "unknown flag", "command": "clier team list --bogus", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: unknown flag: --bogus" }
+      ]
+    },
+    {
+      "id": "claude.help.stray-positional-strict",
+      "title": "Stray positional args on `clier version` and `clier team list` are now rejected",
+      "status": "pass",
+      "rationale": "Both fails recorded in the prior run (qa-20260507-064322-b662abb3) are fixed in dev-01e85e9: `clier version foo` and `clier team list jakeraft` now print `error: unknown command \"…\" for \"clier …\"` to stderr and exit 1. Strictness is consistent with `clier team get jakeraft/hello-clier extra` which still returns `error: expected exactly one <namespace/name>, got 2`.",
+      "steps": [
+        { "label": "clier version foo", "command": "clier version foo", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: unknown command \"foo\" for \"clier version\"" },
+        { "label": "clier team list jakeraft", "command": "clier team list jakeraft", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: unknown command \"jakeraft\" for \"clier team list\"" },
+        { "label": "clier team get extra arg still rejected", "command": "clier team get jakeraft/hello-clier extra", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: expected exactly one <namespace/name>, got 2" }
+      ]
+    },
+    {
+      "id": "claude.team.crud-lifecycle",
+      "title": "Team create / get / update / patch-json / reset-protocol / delete round-trip",
+      "status": "pass",
+      "rationale": "Created `jakeraft/qa-20260507074030-claude` with required flags only, read it back via get (server-default protocol injected), updated description with `--description`, replaced protocol with `--patch-json '{\"protocol\":\"…\"}'`, restored default with `team reset-protocol`, deleted, and re-read returns 404 — every mutation is queryable through the read-side surface and every reversal lands back on the prior shape. `updated_at` advances with each mutation, `created_at` stays pinned.",
+      "steps": [
+        { "label": "create", "command": "clier team create jakeraft/qa-20260507074030-claude --agent-type claude --command 'claude --dangerously-skip-permissions' --git-repo-url https://github.com/jakeraft/hello-clier --description 'QA disposable team'", "exit_code": 0, "status": "pass", "stdout_excerpt": "name=qa-20260507074030-claude protocol=<server-default>" },
+        { "label": "update --description", "command": "clier team update jakeraft/qa-20260507074030-claude --description 'QA disposable team — updated'", "exit_code": 0, "status": "pass", "stdout_excerpt": "description='QA disposable team — updated' updated_at=2026-05-07T16:41:59.897732+09:00" },
+        { "label": "update --patch-json protocol", "command": "clier team update jakeraft/qa-20260507074030-claude --patch-json '{\"protocol\":\"# Custom protocol\\n\\nYou are **{{self}}**.\\n\"}'", "exit_code": 0, "status": "pass", "stdout_excerpt": "protocol='# Custom protocol\\n\\nYou are **{{self}}**.\\n'" },
+        { "label": "reset-protocol restores server default", "command": "clier team reset-protocol jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "protocol back to server default '# Team Protocol\\n\\nYou are **{{self}}** in team **{{root_team}}**...'" },
+        { "label": "delete (cleanup)", "command": "clier team delete jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"deleted\":true,\"name\":\"qa-20260507074030-claude\",\"namespace\":\"jakeraft\"}" },
+        { "label": "get after delete returns 404", "command": "clier team get jakeraft/qa-20260507074030-claude", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 404 Resource not found: team jakeraft/qa-20260507074030-claude not found" }
+      ]
+    },
+    {
+      "id": "claude.team.star-unstar-idempotent",
+      "title": "team star / unstar are idempotent and caller-aware",
+      "status": "pass",
+      "rationale": "Calling `team star` twice in a row on `jakeraft/qa-20260507074030-claude` returns the same `{\"starred\":true}` response both times — the second call is a no-op, no '409 already starred'. Same for `team unstar`. After star+star the read-side `star.count` reads 1 (not 2), confirming the second call did not double-count. After unstar+unstar count reads 0.",
+      "steps": [
+        { "label": "first star", "command": "clier team star jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"name\":\"qa-…\",\"namespace\":\"jakeraft\",\"starred\":true}" },
+        { "label": "second star (idempotent)", "command": "clier team star jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"name\":\"qa-…\",\"namespace\":\"jakeraft\",\"starred\":true}" },
+        { "label": "verify caller-aware count = 1", "command": "clier team get jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"star\": {\"starred\": true, \"count\": 1}" },
+        { "label": "first unstar", "command": "clier team unstar jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"starred\":false}" },
+        { "label": "second unstar (idempotent)", "command": "clier team unstar jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"starred\":false}" },
+        { "label": "verify count = 0", "command": "clier team get jakeraft/qa-20260507074030-claude", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"star\": {\"starred\": false, \"count\": 0}" }
+      ]
+    },
+    {
+      "id": "claude.team.subteam-cascade-guard",
+      "title": "team delete refuses to drop a team referenced as a subteam",
+      "status": "pass",
+      "rationale": "Created child `jakeraft/qa-20260507074030-claude-child`, attached it via `team update --subteam`, attempted to delete the child while still referenced — server returned `error: 409 Failed precondition: team is referenced as a subteam by another team` (exit 1). Cleared the parent's subteams with `--subteam ''`, retried `team delete` — succeeded. Wire-level invariant from `team delete --help` ('referencing team must drop the link first') is enforced.",
+      "steps": [
+        { "label": "delete while referenced is rejected", "command": "clier team delete jakeraft/qa-20260507074030-claude-child", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 409 Failed precondition: team is referenced as a subteam by another team" },
+        { "label": "clear parent subteams", "command": "clier team update jakeraft/qa-20260507074030-claude --subteam ''", "exit_code": 0, "status": "pass", "stdout_excerpt": "\"subteams\": []" },
+        { "label": "delete after clearing reference", "command": "clier team delete jakeraft/qa-20260507074030-claude-child", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"deleted\":true,\"name\":\"qa-20260507074030-claude-child\",\"namespace\":\"jakeraft\"}" }
+      ]
+    },
+    {
+      "id": "claude.team.error-shape-server-validation",
+      "title": "Server-side 422 / 403 / 404 / 409 errors render in `error: <status> <title>: <detail>` shape",
+      "status": "pass",
+      "rationale": "Across team create / update / get / delete / star / reset-protocol the four documented server status families surface with one stderr line each — the wire shape promised by `clier --help` ('Errors print one line on stderr starting with \"error: \" and exit non-zero — the same single-line shape across server validation, client-side validation, and unknown commands.'). 422 carries the field-level detail, 403 names the namespace, 404 names the missing key, 409 explains the precondition.",
+      "steps": [
+        { "label": "422 bad agent_type", "command": "clier team create jakeraft/error-probe-2 --agent-type bogus --command x --git-repo-url https://github.com/x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: agent_type: must be one of \"claude\", \"codex\"" },
+        { "label": "422 non-https git URL", "command": "clier team create jakeraft/error-probe-3 --agent-type claude --command x --git-repo-url git@github.com:x/y.git", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: git_repo_url: must be a GitHub HTTPS URL (https://github.com/owner/repo)" },
+        { "label": "403 foreign namespace on create", "command": "clier team create someone-else/x --agent-type claude --command x --git-repo-url https://github.com/x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 403 Permission denied: caller \"jakeraft\" does not own namespace \"someone-else\"" },
+        { "label": "404 team not found on get", "command": "clier team get jakeraft/nonexistent-zzz", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 404 Resource not found: team jakeraft/nonexistent-zzz not found" },
+        { "label": "409 duplicate create", "command": "clier team create jakeraft/qa-20260507074030-claude --agent-type claude --command x --git-repo-url https://github.com/x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 409 Resource already exists: team jakeraft/qa-20260507074030-claude already exists" },
+        { "label": "422 immutable agent_type via patch-json", "command": "clier team update jakeraft/qa-20260507074030-claude --patch-json '{\"agent_type\":\"codex\"}'", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: agent_type: is not patchable (immutable or unknown)" },
+        { "label": "422 protocol null rejected", "command": "clier team update jakeraft/qa-20260507074030-claude --patch-json '{\"protocol\":null}'", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: protocol: must not be null (use \"\" for empty value, or :reset-protocol for default protocol)" }
+      ]
+    },
+    {
+      "id": "claude.team.error-shape-client-validation",
+      "title": "Client-side validation errors share the same single-line stderr shape",
+      "status": "pass",
+      "rationale": "Missing flags, invalid namespace/name strings, empty arg lists all reject locally before any wire call — the message starts with `error: `, lands on stderr only, and exits 1. The shape mirrors server-side validation: agent code does not need a different parser for client vs server failures.",
+      "steps": [
+        { "label": "missing required flags", "command": "clier team create jakeraft/error-probe-1", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: required flag(s) \"agent-type\", \"command\", \"git-repo-url\" not set" },
+        { "label": "invalid team ID (no slash)", "command": "clier team create no-slash --agent-type claude --command x --git-repo-url https://github.com/x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: invalid team ID \"no-slash\" (expected namespace/name)" },
+        { "label": "empty name half", "command": "clier team create jakeraft/ --agent-type claude --command x --git-repo-url https://github.com/x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: invalid team ID \"jakeraft/\" (expected namespace/name)" },
+        { "label": "team get without arg", "command": "clier team get", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: <namespace/name> is required" },
+        { "label": "team update with no fields", "command": "clier team update jakeraft/qa-20260507074030-claude", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: no fields to update — pass at least one --description / --command / --git-repo-url / --git-subpath / --subteam / --patch-json" }
+      ]
+    },
+    {
+      "id": "claude.team.error-shape-multi-field-aggregation",
+      "title": "Multi-field 422 violations surface every offender in one line",
+      "status": "pass",
+      "rationale": "Trust 3 says 'Multi-field violations surface every offender in one response — no short-circuit on the first one.' Verified on both create and list: passing two or three bad inputs yields a single 422 line with all offenders joined by `; `, no early exit on the first one. An agent does not need to retry to discover the second or third issue.",
+      "steps": [
+        { "label": "two bad fields on create", "command": "clier team create jakeraft/multi-violator --agent-type bogus --command x --git-repo-url ftp://x/y", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: agent_type: must be one of \"claude\", \"codex\"; git_repo_url: must be a GitHub HTTPS URL (https://github.com/owner/repo)" },
+        { "label": "three bad params on list", "command": "clier team list --sort bogus --agent-type bogus --page-size 200", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: sort: must be one of \"stars_desc\", \"stars_asc\", \"updated_desc\", \"updated_asc\"; agent_type: must be one of \"claude\", \"codex\"; page_size: must not exceed 100" }
+      ]
+    },
+    {
+      "id": "claude.team.list-pagination-bounds",
+      "title": "team list bounds (page_size 1..100, q ≤200, opaque cursor) all enforce",
+      "status": "pass",
+      "rationale": "Each documented bound on `team list` rejects with a 422 line naming the offending field. `--page-size 0` and `--page-size 200` both reject (lower-bound message says 'must be between 1 and 100', upper-bound says 'must not exceed 100' — slightly different wording but each accurate); `--q` over 200 chars rejects; opaque `--page-token garbage` rejects.",
+      "steps": [
+        { "label": "page-size lower bound", "command": "clier team list --page-size 0", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: page_size: must be between 1 and 100" },
+        { "label": "page-size upper bound", "command": "clier team list --page-size 200", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: page_size: must not exceed 100" },
+        { "label": "q length cap", "command": "clier team list --q '<201 x chars>'", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: q: exceeds 200 character cap" },
+        { "label": "bad cursor", "command": "clier team list --page-token garbage", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: 422 Invalid argument: page_token: invalid cursor" }
+      ]
+    },
+    {
+      "id": "claude.team.json-output-shape",
+      "title": "team list returns `[]` (not null) on empty data and RFC3339 timestamps",
+      "status": "pass",
+      "rationale": "`clier team list --namespace zzz-nonexistent` returns `{\"data\": [], \"meta\": {\"has_next\": false, \"next_cursor\": \"\"}}` — empty array as `[]` not null, empty string for next_cursor not null. Populated `team get` records carry `created_at`/`updated_at` as RFC3339 with offset (e.g. `2026-05-07T16:41:52.74812+09:00`), and field names (`namespace`, `name`, `agent_type`, `subteams`, `star.starred`, `star.count`) stayed stable across every read in this run.",
+      "command": "clier team list --namespace zzz-nonexistent",
+      "exit_code": 0,
+      "stdout_excerpt": "{\n  \"data\": [],\n  \"meta\": {\n    \"has_next\": false,\n    \"next_cursor\": \"\"\n  }\n}"
+    },
+    {
+      "id": "claude.run.lifecycle",
+      "title": "run start / list / view / capture / tell / stop round-trip",
+      "status": "pass",
+      "rationale": "Started a fresh run on `jakeraft/hello-clier`, captured run_id, listed (newest first, two agents recorded with the QA-lead self-run), viewed (full plan + protocols + args + empty messages), captured both panes (RFC3339 captured_at + content), sent three tells (positional / stdin pipe / --from peer), re-read run.json — all three messages persisted with timestamps, `from: null` for the no-`--from` calls and `from: \"jakeraft.hello-codex\"` for the `--from` call. Stop returned `{\"stopped\":true}`, the dir under `~/.clier/runs/20260507-074351-bb3e694e/` was removed, run list dropped that id, run view returns 404.",
+      "steps": [
+        { "label": "run start", "command": "clier run start jakeraft/hello-clier", "exit_code": 0, "status": "pass", "stdout_excerpt": "run_id=20260507-074351-bb3e694e session_name=clier-… agents=[hello-clier window 0, hello-codex window 1]" },
+        { "label": "run list shows new run + qa-lead self", "command": "clier run list", "exit_code": 0, "status": "pass", "stdout_excerpt": "data=[run_id=20260507-074351-bb3e694e status=running, run_id=20260507-073601-517b0f7d status=running]" },
+        { "label": "run view full plan", "command": "clier run view 20260507-074351-bb3e694e", "exit_code": 0, "status": "pass", "stdout_excerpt": "agents[0].command='claude --setting-sources project --strict-mcp-config --dangerously-skip-permissions' agents[0].args=['--append-system-prompt-file','../protocols/jakeraft.hello-clier.md'] messages=[]" },
+        { "label": "run capture both panes", "command": "clier run capture 20260507-074351-bb3e694e", "exit_code": 0, "status": "pass", "stdout_excerpt": "data=[{agent_id=jakeraft.hello-clier, captured_at=2026-05-07T16:44:03.193001+09:00, content=Claude Code v2.1.132 …}, {agent_id=jakeraft.hello-codex, captured_at=…, content=OpenAI Codex (v0.128.0) …}]" },
+        { "label": "run tell positional", "command": "clier run tell --run 20260507-074351-bb3e694e --to jakeraft.hello-clier 'hello from QA — ignore this and exit'", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074351-bb3e694e\",\"to\":\"jakeraft.hello-clier\"}" },
+        { "label": "run tell stdin pipe (multi-line)", "command": "echo -e 'line1\\nline2\\nignore please' | clier run tell --run 20260507-074351-bb3e694e --to jakeraft.hello-clier", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074351-bb3e694e\",\"to\":\"jakeraft.hello-clier\"}" },
+        { "label": "run tell --from peer", "command": "clier run tell --run 20260507-074351-bb3e694e --to jakeraft.hello-clier --from jakeraft.hello-codex 'from peer'", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074351-bb3e694e\",\"to\":\"jakeraft.hello-clier\"}" },
+        { "label": "run view records all three messages", "command": "clier run view 20260507-074351-bb3e694e", "exit_code": 0, "status": "pass", "stdout_excerpt": "messages=[{from:null,to:jakeraft.hello-clier,content:'hello from QA…'},{from:null,…,content:'line1\\nline2\\nignore please'},{from:'jakeraft.hello-codex',…,content:'from peer'}]" },
+        { "label": "run stop tears down dir", "command": "clier run stop 20260507-074351-bb3e694e", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074351-bb3e694e\",\"stopped\":true}" },
+        { "label": "run dir removed", "command": "ls /Users/jake_kakao/.clier/runs/20260507-074351-bb3e694e/", "exit_code": 1, "status": "pass", "stderr_excerpt": "ls: /Users/jake_kakao/.clier/runs/20260507-074351-bb3e694e/: No such file or directory" },
+        { "label": "run view after stop = 404", "command": "clier run view 20260507-074351-bb3e694e", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: run not found in ~/.clier/runs" }
+      ]
+    },
+    {
+      "id": "claude.run.stop-not-idempotent",
+      "title": "`run stop` is not idempotent — re-stopping returns error 1, contradicting `run stop --help`",
+      "status": "fail",
+      "rationale": "`clier run stop --help` claims 'Stop is final and idempotent: running it on an already-stopped run just clears any leftover dir.' But after a successful stop on `20260507-074447-d7e20e61` (which removed the run dir), a second `clier run stop 20260507-074447-d7e20e61` returns `error: run not found in ~/.clier/runs` and exits 1 — not a no-op. An automation that retries stop after a transient failure (or that issues stop defensively at the end of a script) will see a spurious failure even though the desired state has already been reached.",
+      "fail_note": "Either make `run stop` truly idempotent — exit 0 with `{\"stopped\":true,\"already_stopped\":true}` (or equivalent) when the dir is already gone — or amend the help text to drop the idempotency claim and say the second call returns 404. Prefer the first; the docstring promise is the better contract.",
+      "command": "clier run stop 20260507-074447-d7e20e61",
+      "exit_code": 1,
+      "stderr_excerpt": "error: run not found in ~/.clier/runs",
+      "references": [
+        { "kind": "help_output", "label": "clier run stop --help", "excerpt": "Stop is final and idempotent: running it on an already-stopped run just clears any leftover dir." }
+      ]
+    },
+    {
+      "id": "claude.run.error-shape-local-state",
+      "title": "Local-state run commands all reject unknown ids with the same single-line stderr",
+      "status": "pass",
+      "rationale": "`run view` / `run capture` / `run tell` / `run attach` / `run stop` against a fabricated `fake-run-id-zzz` each emit `error: run not found in ~/.clier/runs` on stderr and exit 1. Per-command client-side missing-args checks (`<run-id> is required`, `required flag(s) \"run\", \"to\" not set`) follow the same shape. `run capture --agent jakeraft.nonexistent-agent` and `run tell --to jakeraft.nonexistent-agent` against a real run report `error: agent not found in run: <id>` (exit 1).",
+      "steps": [
+        { "label": "run view unknown", "command": "clier run view fake-run-id-zzz", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: run not found in ~/.clier/runs" },
+        { "label": "run tell missing flags", "command": "clier run tell", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: required flag(s) \"run\", \"to\" not set" },
+        { "label": "run capture missing arg", "command": "clier run capture", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: <run-id> is required" },
+        { "label": "run attach unknown id", "command": "clier run attach fake-run-id-zzz", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: run not found in ~/.clier/runs" },
+        { "label": "run tell unknown agent on live run", "command": "clier run tell --run 20260507-074351-bb3e694e --to jakeraft.nonexistent-agent x", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: agent not found in run: jakeraft.nonexistent-agent" },
+        { "label": "run capture --agent unknown", "command": "clier run capture 20260507-074351-bb3e694e --agent jakeraft.nonexistent-agent", "exit_code": 1, "status": "pass", "stderr_excerpt": "error: agent not found in run: jakeraft.nonexistent-agent" }
+      ]
+    },
+    {
+      "id": "claude.run.disposable-state",
+      "title": "run stop removes the entire ~/.clier/runs/<id>/ directory — Trust 6 holds",
+      "status": "pass",
+      "rationale": "Before stop: `~/.clier/runs/20260507-074351-bb3e694e/` contains `jakeraft.hello-clier/`, `jakeraft.hello-codex/`, `protocols/`, and `run.json` (2785 bytes). After `clier run stop 20260507-074351-bb3e694e`: the dir is gone — `ls` reports 'No such file or directory'. No orphaned clones, no stale run.json. `clier run list` excludes the id. ADR-0004 §4.6 contract is upheld.",
+      "command": "ls /Users/jake_kakao/.clier/runs/20260507-074351-bb3e694e/",
+      "exit_code": 1,
+      "stderr_excerpt": "ls: /Users/jake_kakao/.clier/runs/20260507-074351-bb3e694e/: No such file or directory"
+    },
+    {
+      "id": "claude.team.disposable-state",
+      "title": "team delete removes the server-side row — disposable prefix cleanly removed",
+      "status": "pass",
+      "rationale": "After `team delete jakeraft/qa-20260507074030-claude` the namespace listing (`team list --namespace jakeraft`) contains only the operator's pre-existing rows: `hello-clier`, `clier-qa-lead`, `hello-codex`. No `qa-20260507074030-claude*` orphans. A subsequent `team get` of either deleted id returns 404 — Trust 6 holds.",
+      "command": "clier team list --namespace jakeraft",
+      "exit_code": 0,
+      "stdout_excerpt": "data=[hello-clier, clier-qa-lead, hello-codex] — no qa-20260507074030-claude rows"
+    },
+    {
+      "id": "claude.open.dashboard",
+      "title": "open dashboard returns the configured URL as JSON",
+      "status": "pass",
+      "rationale": "`clier version` advertises `dashboard_url=http://localhost:5173`; `clier open dashboard` returns `{\"opened\":\"http://localhost:5173\"}` (exit 0). Round-trip with `clier version` is consistent. The `--help` documents `CLIER_DASHBOARD_URL` for per-process override and the per-process call honours the active env var.",
+      "command": "clier open dashboard",
+      "exit_code": 0,
+      "stdout_excerpt": "{\n  \"opened\": \"http://localhost:5173\"\n}"
+    },
+    {
+      "id": "claude.tutorial.walkthrough",
+      "title": "Tutorial steps 1–4 + 6 reproduce as documented; step 5 is interactive",
+      "status": "pass",
+      "rationale": "Walked the canonical tutorial verbatim. Step 1 `team list` returns the catalog (jakeraft/hello-clier first by stars_desc). Step 2 `run start jakeraft/hello-clier` mints a fresh run and prints run_id `20260507-074447-d7e20e61`. Step 3 the heredoc form `clier run tell --run <id> --to jakeraft.hello-clier <<'EOF' …` accepts multi-line stdin and persists the message. Step 4 `run capture` returns both pane buffers as JSON without attaching. Step 6 `run stop` tears the run down and clears `~/.clier/runs/<id>/`. Step 5 (`run attach`) is a TTY-only interactive flow — recorded as skip per the skill instructions.",
+      "steps": [
+        { "label": "Step 1: team list", "command": "clier team list", "exit_code": 0, "status": "pass", "stdout_excerpt": "data[0]=jakeraft/hello-clier (stars=1)" },
+        { "label": "Step 2: run start jakeraft/hello-clier", "command": "clier run start jakeraft/hello-clier", "exit_code": 0, "status": "pass", "stdout_excerpt": "run_id=20260507-074447-d7e20e61 agents=[hello-clier window 0, hello-codex window 1]" },
+        { "label": "Step 3: run tell heredoc multi-line", "command": "clier run tell --run 20260507-074447-d7e20e61 --to jakeraft.hello-clier <<'EOF'\\nGreet your peer and tell me what you learned.\\nEOF", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074447-d7e20e61\",\"to\":\"jakeraft.hello-clier\"}" },
+        { "label": "Step 4: run capture", "command": "clier run capture 20260507-074447-d7e20e61", "exit_code": 0, "status": "pass", "stdout_excerpt": "data=[{agent_id:jakeraft.hello-clier,content:'…❯ Greet your peer and tell me what you learned. …'},{agent_id:jakeraft.hello-codex,content:'…OpenAI Codex (v0.128.0)…'}]" },
+        { "label": "Step 5: run attach", "command": "clier run attach 20260507-074447-d7e20e61", "status": "skip", "skip_reason": "Requires an interactive TTY; the skill explicitly instructs to record skip and continue. The capture step in §4 covers the read-side need without a TTY." },
+        { "label": "Step 6: run stop", "command": "clier run stop 20260507-074447-d7e20e61", "exit_code": 0, "status": "pass", "stdout_excerpt": "{\"run_id\":\"20260507-074447-d7e20e61\",\"stopped\":true}" }
+      ]
+    },
+    {
+      "id": "claude.coverage.tutorial-missing-dimension",
+      "title": "Tutorial does not exercise team unstar / reset-protocol / delete or any failure path",
+      "status": "pass",
+      "rationale": "Cross-coverage check: the §2 free-form pass covered team unstar, team reset-protocol, team delete (with subteam-cascade-protection), and the full failure-path matrix (422 / 403 / 404 / 409, multi-field aggregation, missing required flags, immutable agent_type, protocol null, page-size bounds, q-cap, opaque cursor) — none of which appear in `clier tutorial`. The tutorial deliberately constrains itself to the shortest-path-to-a-running-run. This is a coverage observation, not a defect: the tutorial promises a five-minute happy path and delivers one. Recorded for transparency rather than as a bug. Inverse direction (tutorial steps not exercised by free-form) is empty.",
+      "references": [
+        { "kind": "tutorial_step", "label": "clier tutorial — full body", "excerpt": "1. clier team list … 2. clier run start jakeraft/hello-clier … 3. clier run tell … 4. clier run capture … 5. clier run attach … 6. clier run stop … Going further: Author your own team: clier team create --help. (No mention of unstar/reset-protocol/delete or any failure path.)" }
+      ]
+    }
+  ]
+}
