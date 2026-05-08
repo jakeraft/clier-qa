@@ -1,5 +1,18 @@
 [
   {
+    "id": "qa-20260508-042705-cb2c6d7e",
+    "clier_version": "dev-e60254a",
+    "summary": "Full free-form sweep + tutorial walkthrough on dev-e60254a (post v1.1.0-candidate architectural reorg). All six trust points hold and both fails from qa-20260507-094855 are confirmed fixed: duplicate --subteam now returns 422 with the named offending index (postgres unique-constraint translation), and team update --patch-json '{\"protocol\":null}' now rejects with a clean 422 'protocol: must not be null' (no phantom :reset-protocol recovery hint). Vendor TUI hints (ready_marker/exit_command/trust_response) are surfaced server-side per agent_type and exposed as a stable key set in run view.",
+    "verdict": "pass",
+    "counts": {
+      "total": 49,
+      "pass": 48,
+      "fail": 0,
+      "skip": 1,
+      "error": 0
+    }
+  },
+  {
     "id": "qa-20260507-094855-d5f822bd",
     "clier_version": "dev-1cc9ea2",
     "summary": "Full free-form sweep + tutorial walkthrough on dev-1cc9ea2. All prior fixes hold (no stray-positional swallowing, run stop idempotent, run capture --lines bound, run tell ambiguous content rejected). Two fails: NEW \u2014 duplicate --subteam returns bare \"error: 500 Internal server error\" (Trust 3 envelope missing detail; should be 422 with named offender); REGRESSION-PERSISTING \u2014 protocol:null error still embeds phantom \":reset-protocol\" recovery hint.",
